@@ -17,13 +17,13 @@ start:
     call GetStdHandle               ; Get stdout handle (returned in RAX)
     add rsp, 32                     ; Restore stack
 
-    ; Write "Hello, World!" to standard output
-    sub rsp, 40                     ; Reserve shadow space (32) + 8 for fifth argument
-    mov rcx, rax                    ; RAX File handle: Move handle from GetStdHandle (RAX) to RCX (1st arg for WriteFile)
-    lea rdx, [rel msg]              ; RDX: Pointer to data to write: msg (2nd argument)
-    mov r8, msglen                  ; R8: Number of bytes to write: msglen (3rd argument)
-    xor r9, r9                      ; R9: Pointer to variable for bytes written: Set lpNumberOfBytesWritten to NULL, skip output (4th arg)
-    mov qword [rsp + 32], 0         ; [RSP + 32]: Overlapped structure for async I/O (5th arg)
+    ; Write "Hello, World!" to standard output (WriteFile)
+    sub rsp, 40                     ; Reserve shadow space (32) + 8 for 5th argument
+    mov rcx, rax                    ; RCX: File handle (hFile): Move handle from GetStdHandle (RAX) to RCX (1st argument)
+    lea rdx, [rel msg]              ; RDX: Pointer to data to write (lpBuffer): msg (2nd argument)
+    mov r8, msglen                  ; R8: Number of bytes to write (nNumberOfBytesToWrite): msglen (3rd argument)
+    xor r9, r9                      ; R9: Set to NULL (via xor) (lpNumberOfBytesWritten): don't need byte count (4th argument)
+    mov qword [rsp + 32], 0         ; [RSP + 32] (lpOverlapped): Set to NULL for synchronous write (5th argument)
     call WriteFile                  ; Call WriteFile
     add rsp, 40                     ; Restore stack
 
