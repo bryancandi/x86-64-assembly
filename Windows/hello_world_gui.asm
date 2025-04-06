@@ -3,8 +3,8 @@
 ; nasm -f win64 -o hello_world_gui.obj hello_world_gui.asm
 ; link /entry:start /subsystem:windows hello_world_gui.obj kernel32.lib user32.lib
 
-extern MessageBoxA                  ; External API: Show a message box (from user32.dll)
-extern ExitProcess                  ; External API: Terminate process (from kernel32.dll)
+extern MessageBoxA                  ; External Windows API: Show a message box (from user32.dll)
+extern ExitProcess                  ; External Windows API: Terminate process (from kernel32.dll)
 
 global start                        ; Entry point
 
@@ -24,6 +24,6 @@ start:
     xor rcx, rcx                    ; Exit code 0
     call ExitProcess                ; Terminate the process
 
-section .const                      ; Read-only data
-    msg db "Hello, World!", 0       ; Message string, null-terminated
-    title db "Greetings from ASM!", 0 ; Window title, null-terminated
+section .const                      ; Read-only data (.const)
+    msg db "Hello, World!", 10, "Hello, Assembly!", 0   ; Message string with newline (10 = \n), null-terminated
+    title db "Greetings from ASM!", 0                   ; Window title, null-terminated
