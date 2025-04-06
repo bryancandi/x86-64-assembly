@@ -4,7 +4,7 @@
 
 section .data
     msg_title      db 'Processor Information', 0        ; Title for the message box.
-    intro_line     db 'Processor:', 0xA, 0              ; Introductory line with newline (0xA). Length = 16 bytes including newline.
+    intro_line     db 'Processor:', 0xA, 0              ; Introductory line with newline (0xA). Length = 11 bytes including newline.
     cpu_name       db 48 dup(0)                         ; Buffer for CPU brand string (fetched via CPUID).
     cpu_name_end db 0                                   ; Null terminator for CPU name.
     cores_label    db 'Logical Cores: ', 0              ; Label for logical processors. Length = 15 bytes.
@@ -73,9 +73,6 @@ main:
     cmp rsi, cpu_name+48
     jl .find_cpu_end
 .cpu_end_found:
-    ; RSI now points to the null terminator or cpu_name+48
-    ; R10 points to the start of cpu_name
-
     ; 3. Calculate length and copy the CPU name to final_msg.
     mov rcx, rsi                                        ; Copy end pointer (from RSI) to RCX temporarily.
     sub rcx, r10                                        ; RCX = end_pointer - start_pointer = length of CPU name string.
@@ -117,6 +114,6 @@ main:
     xor r9d, r9d                                        ; R9D = uType = MB_OK (0).
     call MessageBoxA
 
-    ; Exit the program cleanly (unchanged).
+    ; Exit the program cleanly.
     xor ecx, ecx                                        ; Set exit code to 0.
     call ExitProcess                                    ; Terminate process.
