@@ -9,8 +9,8 @@ default rel
 
 ; Section to define initialized data
 section .data
-    title db "ASM Greetings!", 0            ; Title of the message box (null-terminated string)
-    msg db "Hello, World!", 0               ; Message text (null-terminated string)
+    title db "ASM Greetings!", 0                        ; Title of the message box (null-terminated string)
+    msg db "Hello, World!", 10, "Hello, Assembly!", 0   ; Message text with newline (10 = \n) (null-terminated string)
 
 ; Section to define code (instructions)
 section .text
