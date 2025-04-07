@@ -1,7 +1,7 @@
 ; x86-64 Assembly "CPUID" program for Windows GUI
 ; Assemble with NASM and link:
-; nasm -f win64 -o cpuid.obj cpuid.asm
-; link /entry:main /subsystem:windows cpuid.obj kernel32.lib user32.lib
+; nasm -f win64 -o cpuid_gui.obj cpuid_gui.asm
+; link /entry:main /subsystem:windows cpuid_gui.obj kernel32.lib user32.lib
 
 ; Set 64-bit mode and use relative addressing by default
 bits 64
