@@ -12,7 +12,7 @@ section .data
     blankLine db 0xd, 0xa, 0                ; Blank line (null-terminated)
     processorText db "Processor:", 0xa, 0   ; Label for processor info (newline-terminated string)
     cpuName db 48 dup(0)                    ; Buffer for CPU brand string (null-terminated)    
-    format db "%s%s%s", 0                   ; Format string for printf (three strings)
+    formatString db "%s%s%s", 0             ; Format string for printf (three strings)
 
 ; Section to define code (instructions)
 section .text
@@ -47,7 +47,7 @@ main:
     mov [cpuName + 40], ecx                 ; Store next 4 characters
     mov [cpuName + 44], edx                 ; Store last 4 characters
 
-    lea rcx, [format]                       ; First argument (RCX register): pointer to format string
+    lea rcx, [formatString]                 ; First argument (RCX register): pointer to format string
     lea rdx, [blankLine]                    ; Second argument (RDX register): pointer to blank line
     lea r8, [processorText]                 ; Third argument (R8 register): pointer to "Processor:"
     lea r9, [cpuName]                       ; Fourth argument (R9 register): pointer to CPU brand string
