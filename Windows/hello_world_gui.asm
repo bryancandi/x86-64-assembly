@@ -1,29 +1,33 @@
 ; x86-64 Assembly "Hello World" program for Windows GUI
 ; Assemble with NASM and link:
 ; nasm -f win64 -o hello_world_gui.obj hello_world_gui.asm
-; link /entry:start /subsystem:windows hello_world_gui.obj kernel32.lib user32.lib
+; link /entry:main /subsystem:windows hello_world_gui.obj kernel32.lib user32.lib
 
-extern MessageBoxA                  ; External Windows API: Show a message box (from user32.dll)
-extern ExitProcess                  ; External Windows API: Terminate process (from kernel32.dll)
+; Set 64-bit mode and use relative addressing by default
+bits 64
+default rel
 
-global start                        ; Entry point
+; Section to define initialized data
+section .data
+    title db "ASM Greetings!", 0            ; Title of the message box (null-terminated string)
+    msg db "Hello, World!", 0               ; Message text (null-terminated string)
 
-section .text                       ; Code section
-start:
-    ; Display "Hello, World!" in a message box
-    sub rsp, 40                     ; Reserve shadow space (32) + 8 for alignment
-    xor rcx, rcx                    ; RCX: Parent window handle: hWnd = NULL (no parent)
-    lea rdx, [rel msg]              ; RDX: Message text: lpText = Message string
-    lea r8, [rel title]             ; R8: Window title: lpCaption = Window title string
-    xor r9, r9                      ; R9: Message box style: uType = MB_OK (OK button only)
-    call MessageBoxA                ; Call MessageBoxA to show the popup
-    add rsp, 40                     ; Restore stack
+; Section to define code (instructions)
+section .text
+global main                                 ; Entry point for the linker
+extern ExitProcess                          ; External Windows API: Terminate process
+extern MessageBoxA                          ; External Windows API: Display message box
 
-    ; Exit the program with a success code
-    sub rsp, 32                     ; Reserve shadow space
-    xor rcx, rcx                    ; Exit code 0
-    call ExitProcess                ; Terminate the process
+main:
+    push rbp                                ; Save base pointer (used for stack frame setup)
+    mov rbp, rsp                            ; Set the base pointer to the current stack pointer
+    sub rsp, 32                             ; Allocate 32 bytes of stack space for local variables
 
-section .const                      ; Read-only data (.const)
-    msg db "Hello, World!", 10, "Hello, Assembly!", 0   ; Message string with newline (10 = \n), null-terminated
-    title db "Greetings from ASM!", 0                   ; Window title, null-terminated
+    xor rcx, rcx                            ; HWND (NULL for no owner)
+    lea rdx, [msg]                          ; Message text (second argument)
+    lea r8, [title]                         ; Title text (third argument)
+    mov r9d, 0x40                           ; MB_ICONINFORMATION (style for message box)
+    call MessageBoxA                        ; Call the MessageBoxA function
+
+    xor rax, rax                            ; Set RAX to 0 (exit code for ExitProcess)
+    call ExitProcess                        ; Call ExitProcess to terminate the program

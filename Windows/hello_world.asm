@@ -1,37 +1,29 @@
 ; x86-64 Assembly "Hello World" program for Windows CLI
 ; Assemble with NASM and link:
 ; nasm -f win64 -o hello_world.obj hello_world.asm
-; link /entry:start /subsystem:console hello_world.obj kernel32.lib
+; link /subsystem:console hello_world.obj kernel32.lib legacy_stdio_definitions.lib msvcrt.lib
 
-extern GetStdHandle                 ; External Windows API: Get console handles
-extern WriteFile                    ; External Windows API: Write to files/handles
-extern ExitProcess                  ; External Windows API: Terminate process
+; Set 64-bit mode and use relative addressing by default
+bits 64
+default rel
 
-global start                        ; Entry point
+; Section to define initialized data
+section .data
+    msg db "Hello, World!", 0xd, 0xa, 0     ; Message to be printed (with newline and null terminator)
 
-section .text                       ; Code section
-start:
-    ; Get handle for standard output (stdout)
-    sub rsp, 32                     ; Reserve shadow space
-    mov rcx, -11                    ; STD_OUTPUT_HANDLE constant
-    call GetStdHandle               ; Get stdout handle (returned in RAX)
-    add rsp, 32                     ; Restore stack
+; Section to define code (instructions)
+section .text
+global main                                 ; Entry point for the linker
+extern ExitProcess                          ; External Windows API: Terminate process
+extern printf                               ; External Windows API: Function for formatted output
 
-    ; Write "Hello, World!" to standard output (WriteFile)
-    sub rsp, 40                     ; Reserve shadow space (32) + 8 for 5th argument
-    mov rcx, rax                    ; RCX: File handle (hFile): Move handle from GetStdHandle (RAX) to RCX (1st argument)
-    lea rdx, [rel msg]              ; RDX: Pointer to data to write (lpBuffer): msg (2nd argument)
-    mov r8, msglen                  ; R8: Number of bytes to write (nNumberOfBytesToWrite): msglen (3rd argument)
-    xor r9, r9                      ; R9: Set to NULL (via xor) (lpNumberOfBytesWritten): don't need byte count (4th argument)
-    mov qword [rsp + 32], 0         ; [RSP + 32] (lpOverlapped): Set to NULL for synchronous write (5th argument)
-    call WriteFile                  ; Call WriteFile
-    add rsp, 40                     ; Restore stack
+main:
+    push rbp                                ; Save base pointer (used for stack frame setup)
+    mov rbp, rsp                            ; Set the base pointer to the current stack pointer
+    sub rsp, 32                             ; Allocate 32 bytes of stack space for local variables
 
-    ; Exit the program with a success code
-    sub rsp, 32                     ; Reserve shadow space
-    xor rcx, rcx                    ; Exit code 0
-    call ExitProcess                ; Terminate the process
+    lea rcx, [msg]                          ; Load the address of the message into RCX (first argument to printf)
+    call printf                             ; Call the printf function to print the message
 
-section .const                      ; Read-only data
-    msg db "Hello, World!", 13, 10  ; Message string with CRLF (newline)
-    msglen equ $ - msg              ; Length of message
+    xor rax, rax                            ; Set RAX to 0 (exit code for ExitProcess)
+    call ExitProcess                        ; Call ExitProcess to terminate the program
