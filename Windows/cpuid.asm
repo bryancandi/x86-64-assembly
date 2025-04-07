@@ -19,10 +19,9 @@ extern ExitProcess                          ; External Windows API: Terminate pr
 extern MessageBoxA                          ; External Windows API: Display message box
 
 main:
-    ; Save stack frame
-    push rbp                                ; Save base pointer
-    mov rbp, rsp                            ; Set base pointer to stack pointer
-    sub rsp, 32                             ; Allocate local stack space
+    push rbp                                ; Save base pointer (used for stack frame setup)
+    mov rbp, rsp                            ; Set the base pointer to the current stack pointer
+    sub rsp, 32                             ; Allocate 32 bytes of stack space for local variables
 
     ; Use CPUID to get CPU brand string
     mov eax, 0x80000002                     ; First part of the brand string
@@ -46,13 +45,11 @@ main:
     mov [cpuName + 40], ecx                 ; Store next 4 characters
     mov [cpuName + 44], edx                 ; Store last 4 characters
 
-    ; Display CPU name using MessageBoxA
-    xor rcx, rcx                            ; HWND (NULL for no owner)
-    lea rdx, [cpuName]                      ; Pointer to CPU name buffer
-    lea r8, [title]                         ; Title text (third argument)
-    mov r9d, 0x40                           ; MB_ICONINFORMATION (style for message box)
+    xor rcx, rcx                            ; HWND (NULL for no owner window) (first arg)
+    lea rdx, [cpuName]                      ; Message text: pointer to CPU name buffer (second arg)
+    lea r8, [title]                         ; Title text (third arg)
+    mov r9d, 0x40                           ; Style for message box: MB_ICONINFORMATION (fourth arg)
     call MessageBoxA                        ; Call MessageBoxA function
 
-    ; Exit program
     xor rax, rax                            ; Set RAX to 0 (exit code)
     call ExitProcess                        ; Call ExitProcess to terminate program

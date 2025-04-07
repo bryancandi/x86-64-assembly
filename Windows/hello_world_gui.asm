@@ -23,10 +23,10 @@ main:
     mov rbp, rsp                            ; Set the base pointer to the current stack pointer
     sub rsp, 32                             ; Allocate 32 bytes of stack space for local variables
 
-    xor rcx, rcx                            ; HWND (NULL for no owner)
-    lea rdx, [msg]                          ; Message text (second argument)
-    lea r8, [title]                         ; Title text (third argument)
-    mov r9d, 0x40                           ; MB_ICONINFORMATION (style for message box)
+    xor rcx, rcx                            ; HWND (NULL for no owner window) (first arg)
+    lea rdx, [msg]                          ; Message text (second arg)
+    lea r8, [title]                         ; Title text (third arg)
+    mov r9d, 0x40                           ; Style for message box: MB_ICONINFORMATION (fourth arg)
     call MessageBoxA                        ; Call the MessageBoxA function
 
     xor rax, rax                            ; Set RAX to 0 (exit code for ExitProcess)
