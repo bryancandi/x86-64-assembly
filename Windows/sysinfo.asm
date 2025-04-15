@@ -9,12 +9,11 @@ default rel
 
 ; Section to define variables and buffers
 section .data
-    processorText db 0xa, "--- Processor Info ---", 0xa, 0  ; Procesor label (null-terminated with LF (0xa) before and after)
+    processorTitle db 0xa, "--- Processor Info ---", 0xa, 0 ; Procesor title text (null-terminated with LF (0xa) before and after)
     cpuName db 48 dup(0)                                    ; Buffer for CPU brand string (null-terminated)
     coreLabel db "Logical Processors: %d", 0xa, 0           ; Format string (null-terminated with LF)
-    
-    memoryText db "--- Memory Info ---", 0xa, 0             ; Memory label (null-terminated with LF)
-    memInfoSize dq 64                                       ; Length of MEMORYSTATUSEX structure
+
+    memoryTitle db "--- Memory Info ---", 0xa, 0            ; Memory title text (null-terminated with LF)
     memInfo times 64 db 0                                   ; MEMORYSTATUSEX structure buffer
     totalRamLabel db "Total RAM: %llu bytes", 0xa, 0        ; Format string (null-terminated with LF)
     freeRamLabel db "Free RAM: %llu bytes", 0xa, 0          ; Format string (null-terminated with LF)
@@ -33,8 +32,8 @@ main:
     mov rbp, rsp                            ; Set the base pointer to the current stack pointer
     sub rsp, 32                             ; Allocate 32 bytes of stack space for local variables
 
-; Print processor text
-    lea rcx, [processorText]
+; Print processor title text
+    lea rcx, [processorTitle]
     call printf
 
 ; Use CPUID to get CPU brand string and print
@@ -79,8 +78,8 @@ main:
     lea rcx, [newline]
     call printf
 
-; Print memory text
-    lea rcx, [memoryText]
+; Print memory title text
+    lea rcx, [memoryTitle]
     call printf
 
 ; Get total physical RAM and print
