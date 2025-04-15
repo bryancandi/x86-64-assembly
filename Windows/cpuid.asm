@@ -1,4 +1,4 @@
-; x86-64 Assembly "CPUID" program for Windows CLI
+; x86-64 Assembly "CPUID" program for Intel CPUs on Windows CLI
 ; Assemble with NASM and link:
 ; nasm -f win64 -o cpuid.obj cpuid.asm
 ; link /subsystem:console cpuid.obj kernel32.lib legacy_stdio_definitions.lib msvcrt.lib
@@ -7,12 +7,13 @@
 bits 64
 default rel
 
-; Section to define buffer for CPU name
+; Section to define variables and buffers
 section .data
     processorText db 0xa, "Processor:", 0xa, 0  ; Label for processor info (null-terminated with LF (0xa) before and after)
     cpuName db 48 dup(0)                    ; Buffer for CPU brand string (null-terminated)
-    endLine db 0xd, 0xa, " ", 0             ; Empty line for future use (null-terminated with CRLF (0xd, 0xa))
-    formatString db "%s%s%s", 0             ; Format string for printf (three strings)
+    coreLabel db "Logical processors: %d", 0xa, 0  ; Format string for logical processor count (null-terminated with LF)
+    newline db 0xa, 0                       ; Print a new line
+    formatString db "%s%s", 0               ; Format string for printf (two strings)
 
 ; Section to define code (instructions)
 section .text
@@ -49,9 +50,26 @@ main:
 
     lea rcx, [formatString]                 ; First argument (RCX register): pointer to format string
     lea rdx, [processorText]                ; Second argument (RDX register): pointer to label text
-    lea r8, [cpuName]                       ; Third argument (R8 register): pointer to CPU brand string
-    lea r9, [endLine]                       ; Fourth argument (R9 register): pointer to empty string
+    lea r8, [cpuName]                       ; Third argument (R8 register): pointer to CPU brand string    
     call printf                             ; Call printf to print the formatted output
 
+    ; Print a newline
+    lea rcx, [newline]
+    call printf
+
+    ; Use CPUID to get logical processor count from CPUID leaf 0x0B
+    mov eax, 0x0B                           ; Set EAX to 0x0B (the CPUID leaf for topology information)
+    mov ecx, 1                              ; Set ECX to 1 (query the core level topology)
+    cpuid                                   ; Execute CPUID instruction
+    mov edx, ebx                            ; Total logical processors (second argument to printf)
+
+    lea rcx, [coreLabel]                    ; Format string "coreLabel"
+    call printf                             ; Call printf to print the formatted output
+
+    ; Print a newline
+    lea rcx, [newline]
+    call printf
+
+    ; Terminate program
     xor rax, rax                            ; Set RAX to 0 (exit code)
     call ExitProcess                        ; Call ExitProcess to terminate program
