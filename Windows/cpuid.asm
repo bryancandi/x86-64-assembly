@@ -51,7 +51,7 @@ main:
     mov [cpuName + 40], ecx                 ; Store next 4 characters
     mov [cpuName + 44], edx                 ; Store last 4 characters
 
-    lea rcx, [cpuName]                      ; First argument (RCX register): pointer to format string   
+    lea rcx, [cpuName]                      ; First argument (RCX register): pointer to CPU brand string   
     call printf                             ; Call printf to print the formatted output
 
     ; Print a newline
