@@ -9,11 +9,10 @@ default rel
 
 ; Section to define variables and buffers
 section .data
-    processorText db 0xa, "Processor:", 0xa, 0  ; Label for processor info (null-terminated with LF (0xa) before and after)
+    titleText db 0xa, "--- Processor Info ---", 0xa, 0  ; Title label (null-terminated with LF (0xa) before and after)
     cpuName db 48 dup(0)                    ; Buffer for CPU brand string (null-terminated)
     coreLabel db "Logical processors: %d", 0xa, 0  ; Format string for logical processor count (null-terminated with LF)
     newline db 0xa, 0                       ; Print a new line
-    formatString db "%s%s", 0               ; Format string for printf (two strings)
 
 ; Section to define code (instructions)
 section .text
@@ -25,6 +24,10 @@ main:
     push rbp                                ; Save base pointer (used for stack frame setup)
     mov rbp, rsp                            ; Set the base pointer to the current stack pointer
     sub rsp, 32                             ; Allocate 32 bytes of stack space for local variables
+
+    ; Print title text
+    lea rcx, [titleText]
+    call printf
 
     ; Use CPUID to get CPU brand string
     mov eax, 0x80000002                     ; First part of the brand string
@@ -48,9 +51,7 @@ main:
     mov [cpuName + 40], ecx                 ; Store next 4 characters
     mov [cpuName + 44], edx                 ; Store last 4 characters
 
-    lea rcx, [formatString]                 ; First argument (RCX register): pointer to format string
-    lea rdx, [processorText]                ; Second argument (RDX register): pointer to label text
-    lea r8, [cpuName]                       ; Third argument (R8 register): pointer to CPU brand string    
+    lea rcx, [cpuName]                      ; First argument (RCX register): pointer to format string   
     call printf                             ; Call printf to print the formatted output
 
     ; Print a newline
@@ -63,7 +64,7 @@ main:
     cpuid                                   ; Execute CPUID instruction
     mov edx, ebx                            ; Total logical processors (second argument to printf)
 
-    lea rcx, [coreLabel]                    ; Format string "coreLabel"
+    lea rcx, [coreLabel]                    ; First argument (RCX register): pointer to logical procs label
     call printf                             ; Call printf to print the formatted output
 
     ; Print a newline
