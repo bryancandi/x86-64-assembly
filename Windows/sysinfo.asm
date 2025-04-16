@@ -15,8 +15,9 @@ section .data
 
     memoryTitle db "--- Memory Info ---", 0xa, 0            ; Memory title text (null-terminated with LF)
     memInfo times 64 db 0                                   ; MEMORYSTATUSEX structure buffer
-    totalRamLabel db "Total RAM: %llu bytes", 0xa, 0        ; Format string (null-terminated with LF)
-    freeRamLabel db "Free RAM: %llu bytes", 0xa, 0          ; Format string (null-terminated with LF)
+    gibDivisor dq 1073741824                                ; Define as a QWORD (64-bit) integer
+    totalRamLabel db "Total RAM: %llu bytes (%llu GiB)", 0xa, 0 ; Format string (null-terminated with LF)    
+    freeRamLabel db "Free RAM: %llu bytes (%llu GiB)", 0xa, 0   ; Format string (null-terminated with LF)    
 
     newline db 0xa, 0                                       ; Print a new line
 
@@ -26,6 +27,19 @@ global main                                 ; Entry point for the linker
 extern ExitProcess                          ; External Windows API: Terminate process
 extern printf                               ; External Windows API: Function for formatted output
 extern GlobalMemoryStatusEx                 ; External Windows API: Detailed memory info
+
+; Function to get RAM in GiB (rounded up)
+bytesToGibRounding:
+    mov rbx, [gibDivisor]                   ; Load the divisor into RBX
+    xor rdx, rdx                            ; Clear RDX for the division
+    div rbx                                 ; RAX = quotient (GiB), RDX = remainder
+
+    cmp rdx, 536870912                      ; Check if remainder is >= 0.5 GiB (in bytes)
+    jl .round_down_gib                      ; Jump if remainder is Less Than 0.5 GiB
+    inc rax                                 ; Round up (remainder is >= 0.5 GiB)
+
+.round_down_gib:
+    ret                                     ; Return with rounded GiB in RAX
 
 main:
     push rbp                                ; Save base pointer (used for stack frame setup)
@@ -89,8 +103,13 @@ main:
     call GlobalMemoryStatusEx               ; Retrieve system memory information and populate MEMORYSTATUSEX structure
 
     mov rax, [memInfo + 8]                  ; RAX = ullTotalPhys (offset 8)
-    mov rdx, rax                            ; RDX = %llu value for total RAM (bytes)
+    mov rsi, rax                            ; Save the original RAM value in RSI
+    mov rdx, rax                            ; RDX = initial upper part of dividend (will be cleared)
 
+    call bytesToGibRounding                 ; Get rounded GiB in RAX
+
+    mov rdx, rsi                            ; Move the original RAM value from RSI to RDX for printf
+    mov r8, rax                             ; Move the integer GiB value to R8 for printf
     lea rcx, [totalRamLabel]                ; Load address of format string
     call printf                             ; Call printf to print the formatted output
 
@@ -101,8 +120,13 @@ main:
     call GlobalMemoryStatusEx               ; Retrieve system memory information and populate MEMORYSTATUSEX structure
 
     mov rax, [memInfo + 16]                 ; RAX = ullAvailPhys (offset 16)
-    mov rdx, rax                            ; RDX = %llu value for free RAM (bytes)
+    mov rsi, rax                            ; Save the original RAM value in RSI
+    mov rdx, rax                            ; RDX = initial upper part of dividend (will be cleared)
 
+    call bytesToGibRounding                 ; Get rounded GiB in RAX
+
+    mov rdx, rsi                            ; Move the original RAM value from RSI to RDX for printf
+    mov r8, rax                             ; Move the integer GiB value to R8 for printf
     lea rcx, [freeRamLabel]                 ; Load address of format string
     call printf                             ; Call printf to print the formatted output
 
