@@ -15,7 +15,7 @@ section .data
 
     memoryTitle db "--- Memory Info ---", 0xa, 0            ; Memory title text (null-terminated with LF)
     memInfo times 64 db 0                                   ; MEMORYSTATUSEX structure buffer
-    gibDivisor dq 1073741824                                ; Define as a QWORD (64-bit) integer
+    gibDivisor dq 1073741824                                ; Define (1024 * 1024 * 1024) as a QWORD (64-bit) integer
     totalRamLabel db "Total RAM: %llu bytes (%llu GiB)", 0xa, 0 ; Format string (null-terminated with LF)    
     freeRamLabel db "Free RAM: %llu bytes (%llu GiB)", 0xa, 0   ; Format string (null-terminated with LF)    
 
@@ -28,8 +28,8 @@ extern ExitProcess                          ; External Windows API: Terminate pr
 extern printf                               ; External Windows API: Function for formatted output
 extern GlobalMemoryStatusEx                 ; External Windows API: Detailed memory info
 
-; Function to get RAM in GiB (rounded up)
-bytesToGibRounding:
+; Function to convert bytes to GiB and round to the nearest whole number
+bytesToGibRounded:
     mov rbx, [gibDivisor]                   ; Load the divisor into RBX
     xor rdx, rdx                            ; Clear RDX for the division
     div rbx                                 ; RAX = quotient (GiB), RDX = remainder
@@ -106,7 +106,7 @@ main:
     mov rsi, rax                            ; Save the original RAM value in RSI
     mov rdx, rax                            ; RDX = initial upper part of dividend (will be cleared)
 
-    call bytesToGibRounding                 ; Get rounded GiB in RAX
+    call bytesToGibRounded                  ; Get rounded GiB in RAX
 
     mov rdx, rsi                            ; Move the original RAM value from RSI to RDX for printf
     mov r8, rax                             ; Move the integer GiB value to R8 for printf
@@ -123,7 +123,7 @@ main:
     mov rsi, rax                            ; Save the original RAM value in RSI
     mov rdx, rax                            ; RDX = initial upper part of dividend (will be cleared)
 
-    call bytesToGibRounding                 ; Get rounded GiB in RAX
+    call bytesToGibRounded                  ; Get rounded GiB in RAX
 
     mov rdx, rsi                            ; Move the original RAM value from RSI to RDX for printf
     mov r8, rax                             ; Move the integer GiB value to R8 for printf
