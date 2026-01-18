@@ -1,10 +1,17 @@
 # x86-64 Assembly Programs  
-A collection of small **x86-64 assembly programs**, written in **NASM**, for learning purposes. This repository contains basic examples, such as **CPUID-based system info** and **memory status retrieval**, to help explore low-level programming concepts.
+A collection of small x86-64 assembly programs for learning purposes.
 
-## Prerequisites  
-- **NASM** assembler
-- **Windows** : **Microsoft Linker** (`link.exe`) – Available in **MS Visual Studio**
-- **Linux** : **GNU Binutils** (`ld`) – Usually included in standard package managers
+### Prerequisites
 
-## License
-This project is licensed under the [MIT License](https://opensource.org/licenses/MIT). Feel free to contribute, share, or modify!
+#### For MASM
+- Assembler: MASM (or UASM/JWasm for Linux users)
+- Environment: Visual Studio or VS Code with an extension such as MASM Runner.
+
+#### For NASM 
+- Assembler: NASM
+- Windows Linker: `link.exe` (from MSVC).
+- Linux Linker: `ld` (GNU Binutils).
+
+### Repository Structure
+- `/MASM`: Programs using MASM syntax.
+- `/NASM`: Programs using NASM syntax.
