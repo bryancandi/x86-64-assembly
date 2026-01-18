@@ -12,8 +12,8 @@ A collection of small x86-64 assembly programs for learning purposes.
 - Environment: Any editor of choice.
 
 #### Linker
-- Windows: `link.exe` (from MSVC).
-- Linux: `ld` or `gcc`.
+- Windows: `link.exe` (MSVC)
+- Linux: `ld` (GNU Binutils)
 
 ### Repository Structure
 - `/MASM`: Programs using MASM syntax.
