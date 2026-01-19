@@ -4,7 +4,7 @@
 ; ml64.exe hello.asm /link /SUBSYSTEM:console /ENTRY:main
 ;--------------------------------------------------------------------
 
-INCLUDELIB kernel32.lib	                    ; Import a standard Windows library.
+INCLUDELIB kernel32.lib                     ; Import a standard Windows library.
 
 ExitProcess    PROTO                        ; Declare the ExitProcess function prototype.
 GetStdHandle   PROTO
@@ -17,8 +17,8 @@ deviceCode EQU -11                          ; Code for console output.
     handle  QWORD ?
     num     DWORD ?
 
-.CODE						                ; Start of the code section.
-main PROC					                ; Entry point of the program.
+.CODE                                       ; Start of the code section.
+main PROC                                   ; Entry point of the program.
     XOR RAX, RAX                            ; Clear registers.
     XOR RCX, RCX
     XOR RDX, RDX
@@ -39,5 +39,5 @@ main PROC					                ; Entry point of the program.
 
     XOR RCX, RCX                            ; Exit code 0.
     CALL ExitProcess                        ; Call the ExitProcess function to exit the program.
-main ENDP					                ; End of the main procedure.
-END     					                ; End of the assembly program.
+main ENDP                                   ; End of the main procedure.
+END                                         ; End of the assembly program.
