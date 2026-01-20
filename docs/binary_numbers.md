@@ -54,20 +54,21 @@ To convert a negative signed binary number to decimal, invert all bits, then add
 
 **-2** in decimal.
 
-### Memory Addressing
+### Memory Addressing Example:
 
 | Address  | MSB   |      |      |      |      |      |      | LSB   |
 | ----     | ----: | ---- | ---- | ---- | ---- | ---- | ---- | :---- |
 | 00000000 | 1     | 0    | 0    | 1    | 1    | 1    | 0    | 1     |
 | 00000001 | 1     | 1    | 1    | 0    | 0    | 1    | 0    | 0     |
 | 00000002 | 0     | 0    | 1    | 1    | 0    | 1    | 1    | 1     |
+| 00000003 | 0     | 1    | 0    | 1    | 0    | 1    | 0    | 1     |  
 ...
 
 ### Binary Number Lengths:
 
-**Bit** &mdash; `0` or `1`\
-**Nibble** &mdash; `0101`\
-**Byte** &mdash; `01010101`
+Bit: **0** or **1**\
+Nibble: **0101**\
+Byte: **01010101**
 - A **nibble** *(or nybble)* is a group of 4-bits.
 - A **byte** is a group of 8-bits.
 
@@ -80,6 +81,6 @@ To convert a negative signed binary number to decimal, invert all bits, then add
 
 ### Denoting Numbers in Assembly:
 
-Decimal:&nbsp;&nbsp;**21**\
-Binary:&nbsp;&nbsp;**00010101b**\
-Hexadecimal:&nbsp;&nbsp;**15h**
+Decimal: **21**\
+Binary: **00010101b**\
+Hexadecimal: **15h**
