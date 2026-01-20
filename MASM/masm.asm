@@ -1,5 +1,8 @@
 ;--------------------------------------------------------------------
 ; MASM: A barebones template for Assembly programming.
+; Assemble with MASM and link:
+; ml64.exe source.asm /link /SUBSYSTEM:console /ENTRY:main
+; ml64.exe source.asm /link /SUBSYSTEM:windows /ENTRY:main
 ;--------------------------------------------------------------------
 
 INCLUDELIB kernel32.lib         ; Import a standard Windows library.
