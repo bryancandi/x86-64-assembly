@@ -24,7 +24,7 @@
 
 ### Signed Binary Example:
 
-Signed numbers use two’s complement representation, where the MSB (most significant bit) indicates the sign.
+Signed numbers use two’s complement representation, where the MSB indicates the sign.
 - **0** indicates a positive number.
 - **1** indicates a negative number.
 
@@ -36,21 +36,21 @@ Signed numbers use two’s complement representation, where the MSB (most signif
 
 To convert a negative signed binary number to decimal, invert all bits, then add **1** (two’s complement). Then negate the decimal result.
 
-| 1     | 1    | 1    | 1    | 1    | 1    | 1    | 0     |
-| ----: | ---- | ---- | ---- | ---- | ---- | ---- | :---- |
-| MSB   |      |      |      |      |      |      | LSB   |
+| 1     | 1    | 1    | 1    | 1    | 1    | 1    | 0    |
+| ----: | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
+| MSB   |      |      |      |      |      |      |      |
 
 *Inverted:*
 
-| 0     | 0    | 0    | 0    | 0    | 0    | 0    | 1     |
-| ----: | ---- | ---- | ---- | ---- | ---- | ---- | :---- |
-| MSB   |      |      |      |      |      |      | LSB   |
+| 0     | 0    | 0    | 0    | 0    | 0    | 0    | 1    |
+| ----: | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
+| MSB   |      |      |      |      |      |      |      |
 
 *Add 1; negate the decimal result:*
 
-| 0     | 0    | 0    | 0    | 0    | 0    | 1    | 0     |
-| ----: | ---- | ---- | ---- | ---- | ---- | ---- | :---- |
-| MSB   |      |      |      |      |      |      | LSB   |
+| 0     | 0    | 0    | 0    | 0    | 0    | 1    | 0    |
+| ----: | ---- | ---- | ---- | ---- | ---- | ---- | ---- |
+| MSB   |      |      |      |      |      |      |      |
 
 **-2** in decimal.
 
@@ -65,9 +65,9 @@ To convert a negative signed binary number to decimal, invert all bits, then add
 
 ### Binary Number Lengths:
 
-**Bit**:&nbsp;&nbsp;`0` or `1`\
-**Nibble**:&nbsp;&nbsp;`0101`\
-**Byte**:&nbsp;&nbsp;`01010101`
+**Bit** &mdash; `0` or `1`\
+**Nibble** &mdash; `0101`\
+**Byte** &mdash; `01010101`
 - A **nibble** *(or nybble)* is a group of 4-bits.
 - A **byte** is a group of 8-bits.
 
