@@ -13,7 +13,10 @@ ExitProcess PROTO               ; Declare the ExitProcess function prototype.
 
 .CODE                           ; Start of the code section.
 main PROC                       ; Entry point of the program.
+    SUB RSP, 40                 ; Create shadow space for 4 arguments (32 shadow + 8 alignment).
                                 ; Assembly instructions go here.
+
+    XOR RCX, RCX                ; Exit code 0;
     CALL ExitProcess            ; Call the ExitProcess function to exit the program.
 main ENDP                       ; End of the main procedure.
 END                             ; End of the assembly program.
