@@ -19,13 +19,13 @@ deviceCode EQU -11                          ; Code for console output.
 
 .CODE                                       ; Start of the code section.
 main PROC                                   ; Entry point of the program.
+    SUB RSP, 40                             ; Create shadow space for 4 arguments (32 shadow + 8 alignment).
+    
     XOR RAX, RAX                            ; Clear registers.
     XOR RCX, RCX
     XOR RDX, RDX
     XOR R8, R8
     XOR R9, R9
-
-    SUB RSP, 40                             ; Create shadow space for 4 arguments (32 shadow + 8 alignment).
 
     MOV RCX, deviceCode                     ; Console device code, to be passed to GetStdHandle.
     CALL GetStdHandle                       ; Receive the console output handle.
