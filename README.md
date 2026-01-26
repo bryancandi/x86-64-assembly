@@ -22,5 +22,6 @@ A collection of small x86-64 assembly programs and experiments for learning purp
 ### 📚 Documentation
 - [Numbering Systems](./docs/numbering-systems.md)
 - [Binary Numbers](./docs/binary-numbers.md)
+- [Assembly Bitwise Operations](./docs/bitwise-operations.md)
 - [General-Purpose Registers](./docs/general-purpose-registers.md)
 - [Win x64 Register Calling Conventions](./docs/register-conventions.md)
