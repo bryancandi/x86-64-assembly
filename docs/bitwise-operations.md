@@ -1,4 +1,4 @@
-## Assembly Bitwise Operations
+### Assembly Bitwise Operations
 
 | Instruction | Binary Number Operations |
 | :----:      | ----                     |
