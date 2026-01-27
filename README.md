@@ -24,4 +24,5 @@ A collection of small x86-64 assembly programs and experiments for learning purp
 - [Binary Numbers](./docs/binary-numbers.md)
 - [Assembly Bitwise Operations](./docs/bitwise-operations.md)
 - [General-Purpose Registers](./docs/general-purpose-registers.md)
-- [Win x64 Register Calling Conventions](./docs/register-conventions.md)
+- [x64 Register Calling Conventions](./docs/register-conventions.md)
+- [GNU gdb Assembly Quick Reference](./docs/gdb.md)
