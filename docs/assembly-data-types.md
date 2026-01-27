@@ -24,7 +24,7 @@ Assemblers use different syntax to define data of the same size in memory.
 
 ### Denoting Numbers in Assembly
 
-- Decimal: **21**\
-- Binary: **00010101b**\
-- Hexadecimal (MASM-style): **15h**\
+- Decimal: **21**
+- Binary: **00010101b**
+- Hexadecimal (MASM-style): **15h**
 - Hexadecimal (C / NASM-style): **0x15**
