@@ -71,16 +71,3 @@ Nibble: **0101**\
 Byte: **01010101**
 - A **nibble** *(or nybble)* is a group of 4-bits.
 - A **byte** is a group of 8-bits.
-
-### Assembly Data Types:
-
-**BYTE** &mdash; Byte (8-bits) range 0 to 255, or -128 to 127\
-**WORD** &mdash; Word (16-bits) range 0 to 65,535, or -32,768 to 32,767\
-**DWORD** &mdash; Double word (32-bits) 0 to 2<sup>32</sup>-1, or -2<sup>31</sup> to 2<sup>31</sup>-1\
-**QWORD** &mdash; Quad word (64-bits) 0 to 2<sup>64</sup>-1, or -2<sup>63</sup> to 2<sup>63</sup>-1
-
-### Denoting Numbers in Assembly:
-
-Decimal: **21**\
-Binary: **00010101b**\
-Hexadecimal: **15h**
