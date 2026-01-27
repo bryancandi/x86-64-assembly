@@ -19,9 +19,9 @@ main PROC                       ; Entry point of the program.
     MOV RCX, con                ; Move the value of constant 'con' into RCX register.
     MOV RDX, con + 8			; Move the value of constant 'con' + 8 into RDX register.
     MOV RCX, con + 8 * 2		; Move the value of constant 'con' + 16 into RCX register.
-    MOV RDX, (con + 8) * 2	    ; Move the value of (constant 'con' + 8) * 2 into RDX register.
+    MOV RDX, (con + 8) * 2	    ; Move the value of constant ('con' + 8) * 2 into RDX register.
     MOV RCX, con MOD 5		    ; Move the value of constant 'con' MOD 5 into RCX register.
-    MOV RDX, (con - 3) / 3      ; Move the value of (constant 'con' - 3) / 3 into RDX register.
+    MOV RDX, (con - 3) / 3      ; Move the value of constant ('con' - 3) / 3 into RDX register.
 
     XOR RCX, RCX                ; Exit code 0;
     CALL ExitProcess            ; Call the ExitProcess function to exit the program.
