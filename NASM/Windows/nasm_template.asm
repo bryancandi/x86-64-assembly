@@ -15,12 +15,12 @@ global main                 ; Make 'main' visible to the linker.
 
 main:
     ; Windows x64 calling convention requires 32-byte "shadow space".
-    sub     rsp, 40         ; 32 shadow + 8 alignment.
+    sub rsp, 40             ; 32 shadow + 8 alignment.
 
     ; Assembly instructions go here.
 
-    xor     rcx, rcx        ; Exit code 0.
-    call    ExitProcess     ; Exit the program.
+    xor rcx, rcx            ; Exit code 0.
+    call ExitProcess        ; Exit the program.
 
     ; Restore stack pointer (optional, ExitProcess does not return).
-    add     rsp, 40
+    add rsp, 40

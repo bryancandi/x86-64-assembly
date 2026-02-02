@@ -17,6 +17,6 @@ global _start               ; Entry point for Linux executables.
 _start:
     ; Assembly instructions go here.
 
-    mov     rdi, 0          ; exit code 0.
-    mov     rax, 60         ; syscall number for exit.
+    mov rdi, 0              ; exit code 0.
+    mov rax, 60             ; syscall number for exit.
     syscall
