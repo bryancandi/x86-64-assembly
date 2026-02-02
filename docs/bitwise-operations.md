@@ -23,3 +23,4 @@
 >     <--------------------
 >     00110000 = 48 decimal
 >     ```
+> - The bit that is shifted out is moved to the "carry flag", and the previous bit in the carry flag is thrown away.
