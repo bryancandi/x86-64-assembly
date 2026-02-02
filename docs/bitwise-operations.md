@@ -14,3 +14,12 @@
 | ROR         | Rotate Right: Move all bits a specified number of positions to the right; bits shifted out of the right end re-enter on the left. Example: **ROR 10011000, 1** becomes **01001100**. |
 | RCL         | Rotate Carry Left: Rotate left as **ROL**, treating the carry flag as an extra bit in the rotation. 8-bit example (*RCL 10011000, 1*): CF=**1** **10011000** becomes CF=**1** **00110001**. **MSB** moves into **CF**, **CF** moves into **LSB**. |
 | RCR         | Rotate Carry Right: Rotate right as **ROR**, treating the carry flag as an extra bit in the rotation. 8-bit example (*RCR 10011000, 1*): **10011000** CF=**1**, becomes **11001100** CF=**0**. **LSB** moves into **CF**, **CF** moves into **MSB**. |
+
+> [!NOTE]
+> - Each shift left by one bit doubles the numerical value; each shift right by one bit halves the numerical value.
+>   - ```
+>     SHL Register-Name, 1
+>     00011000 = 24 decimal
+>     <--------------------
+>     00110000 = 48 decimal
+>     ```
