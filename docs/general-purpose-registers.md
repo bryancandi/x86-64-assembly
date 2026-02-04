@@ -1,4 +1,4 @@
-### x64 General-Purpose Registers
+### x86-64 General-Purpose Registers
 
 |**64-bit**|**32-bit**|**16-bit**|**8-bit**|
 | :----:   | :----:   | :----:   | :----:  |
