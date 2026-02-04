@@ -19,7 +19,7 @@ A collection of small x86-64 assembly programs and experiments for learning purp
 - `/MASM`: Programs using MASM syntax.
 - `/NASM`: Programs using NASM syntax.
 
-### 📚 Documentation
+### 📚 Reference
 - [Numbering Systems](./docs/numbering-systems.md)
 - [Binary Numbers](./docs/binary-numbers.md)
 - [Assembly Data Types](./docs/assembly-data-types.md)
@@ -28,3 +28,8 @@ A collection of small x86-64 assembly programs and experiments for learning purp
 - [x86-64 Register Calling Conventions](./docs/register-conventions.md)
 - [x86-64 Processor State Flags (RFLAGS)](./docs/processor-state-flags.md)
 - [GNU gdb Assembly Quick Reference](./docs/gdb.md)
+
+### 📖 External Documentation
+- [Microsoft Macro Assembler Reference](https://learn.microsoft.com/en-us/cpp/assembler/masm/microsoft-macro-assembler-reference)
+- [The Netwide Assembler Manual](https://www.nasm.us/doc/)
+- [Intel® 64 and IA-32 Architectures Software Developer Manuals](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html)
