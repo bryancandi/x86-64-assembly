@@ -18,7 +18,7 @@ fib PROC
 
     CMP RAX, 13                 ; Stop recursion when RAX reaches 13.
     JG finish
-    CALL fib
+    CALL fib                    ; Call the fib procedure recursively.
     finish:
     RET
 fib ENDP                        ; End of the fib procedure.
