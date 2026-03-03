@@ -6,21 +6,26 @@
 ; ml64.exe fact.asm /link /SUBSYSTEM:console /ENTRY:main
 ;--------------------------------------------------------------------
 
-INCLUDELIB kernel32.lib         ; Import a standard Windows library.
-ExitProcess PROTO               ; Declare the ExitProcess function prototype.
+INCLUDELIB kernel32.lib
+INCLUDELIB shell32.lib
+
+ExitProcess PROTO
 GetStdHandle PROTO
 WriteConsoleA PROTO
+GetCommandLineW PROTO
+CommandLineToArgvW PROTO
 
 STD_OUTPUT_HANDLE EQU -11
 
 .DATA
-    txt BYTE 100 DUP (?)        ; Empty 100 byte buffer for output.
+    txt BYTE 100 DUP (?)        ; Empty 100 byte buffer to store ASCII digits of factorial result.
     handle QWORD ?              ; 64-bit storage for Windows HANDLE (returned by GetStdHandle).
     num DWORD ?                 ; 32-bit output variable for WriteConsoleA character count.
-    fnum QWORD 5                ; Number to use in factorial calculation.
+    argc DWORD ?                ; 32‑bit storage for the argument count returned by CommandLineToArgvW.
+    argv QWORD ?                ; 64‑bit storage for the pointer to the argv array (LPWSTR*).
 
 .CODE
-int_to_str PROC
+IntToStr PROC
     LEA RDI, txt                ; Load address of 'txt' buffer into RDI register.
     ADD RDI, LENGTHOF txt - 1   ; Adjust pointer to end of 'txt' buffer.
     MOV RBX, 10                 ; Move divisor into RBX.
@@ -35,9 +40,26 @@ int_to_str PROC
     JNZ div_loop                ; No; restart loop.
     LEA RAX, [RDI + 1]          ; Return value is stored in RAX. RAX + 1 because RDI was decremented before testing RAX for zero.
     RET
-int_to_str ENDP
+IntToStr ENDP
 
-fact PROC
+StrToInt PROC
+    XOR RAX, RAX
+
+    start:
+    MOVZX RDX, WORD PTR [RCX]   ; Move wchar with zero-extend into RDX.
+    TEST RDX, RDX               ; Is RDX zero?
+    JZ finish                   ; Yes; return.
+    SUB RDX, '0'                ; Subtract ASCII '0' value to convert from char to integer.
+    IMUL RAX, RAX, 10           ; Multiply the current accumulated value by 10 to shift its decimal place left before adding the next digit.
+    ADD RAX, RDX                ; Add the newly parsed digit (0–9) into the shifted accumulator to form the next partial value.
+    ADD RCX, 2                  ; Advance pointer to next wide character (wchar = 2 bytes).
+    JMP start
+
+    finish:
+    RET
+StrToInt ENDP
+
+Fact PROC
     MOV RAX, 1                  ; Initialize factorial result to 1. RAX will hold the running factorial result.
     CMP RCX, 1                  ; Check if RCX is less than or equal to 1 (fnum); return if true.
     JLE finish
@@ -50,16 +72,23 @@ fact PROC
 
     finish:
     RET
-fact ENDP
+Fact ENDP
 
 main PROC                       ; Entry point of the program.
     SUB RSP, 40                 ; Create shadow space for 4 arguments (32 shadow + 8 alignment).
 
-    XOR RAX, RAX                ; Clear return register. This will contain output from 'fact' and 'int_to_str' functions.
+    CALL GetCommandLineW
+    MOV RCX, RAX                ; LPWSTR cmdline.
+    LEA RDX, argc               ; int argc.
+    CALL CommandLineToArgvW
+    MOV argv, RAX               ; LPWSTR* argv.
+    MOV RCX, [argv]             ; Point to argv array in RCX.
+    MOV RCX, [RCX+8]            ; Point to argv[1] (skip program name).
 
-    MOV RCX, fnum               ; Move number to calculate the factorial of into RCX register.
-    CALL fact                   ; 'fact' will store factorial integer in RAX register for division in 'int_to_str'.
-    CALL int_to_str             ; 'int_to_str' will convert the integer in RAX to a string in 'txt' buffer.
+    CALL StrToInt             ; Convert the string in argv[1] to an integer to use in factorial calculation.
+    MOV RCX, RAX                ; Move number to calculate the factorial of into RCX register.
+    CALL Fact                   ; Store factorial integer in RAX register for division in 'IntToStr'.
+    CALL IntToStr             ; Convert the integer in RAX to a string in 'txt' buffer.
 
     MOV RCX, STD_OUTPUT_HANDLE  ; Move STDOUT handle to RCX to be used by GetStdHandle call.
     CALL GetStdHandle           ; Receive console handle.
