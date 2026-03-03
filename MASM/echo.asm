@@ -1,7 +1,7 @@
 ;--------------------------------------------------------------------
 ; ECHO: x86-64 Read console input and write it back to the console.
 ; Assemble with MASM and link:
-; ml64.exe hello.asm /link /SUBSYSTEM:console /ENTRY:main
+; ml64.exe echo.asm /link /SUBSYSTEM:console /ENTRY:main
 ;--------------------------------------------------------------------
 
 INCLUDELIB kernel32.lib                     ; Import a standard Windows library.
