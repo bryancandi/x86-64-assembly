@@ -1,6 +1,5 @@
 ;--------------------------------------------------------------------
 ; Factorial example for Windows x64 (MASM / ml64).
-; Change 'fnum' to try different input values.
 ;
 ; Assemble with MASM and link:
 ; ml64.exe fact.asm /link /SUBSYSTEM:console /ENTRY:main
