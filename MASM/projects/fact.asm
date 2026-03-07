@@ -76,6 +76,12 @@ Factorial ENDP
 main PROC
     SUB RSP, 40                 ; Create shadow space for 4 arguments (32 shadow + 8 alignment).
 
+    XOR RAX, RAX                            ; Clear registers.
+    XOR RCX, RCX
+    XOR RDX, RDX
+    XOR R8, R8
+    XOR R9, R9
+
     CALL GetCommandLineW
     MOV RCX, RAX                ; LPWSTR cmdline.
     LEA RDX, argc               ; int argc.

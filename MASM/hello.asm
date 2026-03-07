@@ -10,7 +10,7 @@ ExitProcess    PROTO                        ; Declare the ExitProcess function p
 GetStdHandle   PROTO
 WriteConsoleA  PROTO
 
-deviceCode EQU -11                          ; Code for console output.
+STD_OUTPUT_HANDLE EQU -11                   ; Code for console output.
 
 .DATA                                       ; Start of the data section.
     txt     BYTE "Hello, World!", 10, 0     ; 10 is ASCII line feed, 0 is null terminator.
@@ -20,14 +20,14 @@ deviceCode EQU -11                          ; Code for console output.
 .CODE                                       ; Start of the code section.
 main PROC                                   ; Entry point of the program.
     SUB RSP, 40                             ; Create shadow space for 4 arguments (32 shadow + 8 alignment).
-    
+
     XOR RAX, RAX                            ; Clear registers.
     XOR RCX, RCX
     XOR RDX, RDX
     XOR R8, R8
     XOR R9, R9
 
-    MOV RCX, deviceCode                     ; Console device code, to be passed to GetStdHandle.
+    MOV RCX, STD_OUTPUT_HANDLE              ; Console device code, to be passed to GetStdHandle.
     CALL GetStdHandle                       ; Receive the console output handle.
     MOV handle, RAX                         ; Store the device handle.
 
