@@ -62,4 +62,4 @@ nbwr    qword   ?               ; Number of bytes actually written
 stdin   qword   ?               ; Handle to standard input device
 nbrd    qword   ?               ; Number of bytes actually read
 
-    end
+        end
