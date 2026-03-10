@@ -30,7 +30,7 @@ main    proc
 main    endp
 
         .data
-hwm     word    "H", "e", "l", "l", "o", " ", "W", "o", "r", "l", "d", " ", 0D83Dh, 0DE00h
+hwm     word    "H", "e", 03BBh, 03BBh, "o", " ", "W", "o", "r", "l", "d", " ", 0D83Dh, 0DE00h
 stdout  qword   ?               ; Handle to standard output device
 nbwr    qword   ?               ; Number of bytes actually written
 
