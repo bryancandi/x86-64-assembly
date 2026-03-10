@@ -6,7 +6,7 @@ Console         equ    -11      ; Device code for console text output.
 Keyboard        equ    -10      ; Device code for console text input.
 ExitProcess     proto
 
-    .code
+        .code
 
 ;    Main program that reads text message from user through command
 ;    window keyin and displays it in same command window.
