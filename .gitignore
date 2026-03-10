@@ -22,6 +22,7 @@
 !*.html
 !*.java
 !*.js
+!*.lib
 !*.md
 !*.py
 !*.R
