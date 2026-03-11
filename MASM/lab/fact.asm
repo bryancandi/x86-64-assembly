@@ -16,8 +16,19 @@ CommandLineToArgvW  proto
 
 STD_OUTPUT_HANDLE   equ    -11
 
+msgOut  macro   msg             ; One arg macro: msg
+        mov     RCX, handle     ; 1st arg: handle to console screen buffer.
+        lea     RDX, msg        ; 2nd arg: pointer to buffer (macro) that contain text to write.
+        mov     R8, lengthof msg ; 3rd arg: number of characters to be written to console.
+        lea     R9, num         ; 4th arg: pointer to a variable to contain the number of characters actually written.
+        call    WriteConsoleA
+        endm
+
         .data
 buf     byte    100 DUP (?)     ; Empty 100 byte buffer to store ASCII digits of factorial result.
+fact    byte    "Factorial: "
+usage   byte    "Usage: fact.exe <num>"
+newln   byte    0DH, 0AH        ; Carriage return and line feed.
 handle  qword   ?               ; 64-bit storage for Windows HANDLE (returned by GetStdHandle).
 num     dword   ?               ; 32-bit output variable for WriteConsoleA character count.
 argc    dword   ?               ; 32-bit storage for the argument count returned by CommandLineToArgvW.
@@ -25,18 +36,20 @@ argv    qword   ?               ; 64-bit storage for the pointer to the argv arr
 
         .code
 IntToStr proc
+        push    RDI             ; Preserve caller's RDI value on the stack.
         lea     RDI, buf        ; Load address of 'buf' buffer into RDI register.
         add     RDI, lengthof buf - 1 ; Adjust pointer to end of 'buf' buffer.
-        mov     RBX, 10         ; Move divisor into RBX.
+        mov     R10, 10         ; Move divisor into R10.
 
 divlp:  xor     RDX, RDX        ; Clear for remainder.
-        div     RBX             ; Divide RAX by RBX (10).
+        div     R10             ; Divide RAX by R10 (10).
         add     RDX, '0'        ; Add ASCII '0' value to remainder in RDX to convert from integer to ASCII value.
         mov     [RDI], DL       ; Move one byte of RDX (DL) into RDI (RDI points to 'buf' buffer).
         dec     RDI             ; Decrement RDI; we are writing to the buffer in reverse order (starting at the end).
         test    RAX, RAX        ; Is RAX zero?
         jnz     divlp           ; No; restart loop.
         lea     RAX, [RDI + 1]  ; Return value is stored in RAX. RAX + 1 because RDI was decremented before testing RAX for zero.
+        pop     RDI             ; Restore RDI.
         ret
 IntToStr endp
 
@@ -52,8 +65,7 @@ start:  movzx   RDX, word ptr [RCX] ; Move wchar with zero-extend into RDX.
         add     RCX, 2          ; Advance pointer to next wide character (wchar = 2 bytes).
         jmp     start
 
-finish:
-        ret
+finish: ret
 StrToInt endp
 
 Factorial proc
@@ -72,17 +84,17 @@ Factorial endp
 main    proc
         sub     RSP, 40         ; Create shadow space for 4 arguments (32 shadow + 8 alignment).
 
-        xor     RAX, RAX        ; Clear registers.
-        xor     RCX, RCX
-        xor     RDX, RDX
-        xor     R8, R8
-        xor     R9, R9
+        mov     RCX, STD_OUTPUT_HANDLE ; Move STDOUT handle to RCX to be used by GetStdHandle call.
+        call    GetStdHandle    ; Receive console handle.
+        mov     handle, RAX     ; Store console handle.
 
         call    GetCommandLineW
         mov     RCX, RAX        ; LPWSTR cmdline.
         lea     RDX, argc       ; int argc.
 
         call    CommandLineToArgvW
+        cmp     argc, 2         ; Was a second arg provided?
+        jne     error           ; No; Exit.
         mov     argv, RAX       ; LPWSTR* argv.
         mov     RCX, [argv]     ; Point to argv array in RCX.
         mov     RCX, [RCX+8]    ; Point to argv[1] (skip program name).
@@ -92,18 +104,17 @@ main    proc
         call    Factorial       ; Store factorial integer in RAX register for division in IntToStr.
         call    IntToStr        ; Convert the integer in RAX to a string in 'buf' buffer.
 
-        mov     RCX, STD_OUTPUT_HANDLE ; Move STDOUT handle to RCX to be used by GetStdHandle call.
-        call    GetStdHandle    ; Receive console handle.
-        mov     handle, RAX     ; Store console handle.
+        msgOut  fact            ; Write to console.
+        msgOut  buf
+        msgOut  newln
 
-        mov     RCX, handle     ; 1st arg: handle to console screen buffer.
-        lea     RDX, buf        ; 2nd arg: pointer to buffer that contain text to write.
-        mov     R8, lengthof buf ; 3rd arg: number of characters to be written to console.
-        lea     R9, num         ; 4th arg: pointer to a variable to contain the number of characters actually written.
-        mov     qword ptr [RSP+32], 0 ; 5th arg: lpReserved; NULL.
-        call    WriteConsoleA
-
-        xor     RCX, RCX        ; Exit code 0.
+exit:   xor     RCX, RCX        ; Exit code 0.
         call    ExitProcess
+        add     RSP, 40         ; Restore "shadow space" on stack (never reached; ExitProcess does not return).
+
+error:  msgOut  usage           ; Write error to console.
+        msgOut  newln
+        jmp exit
+
 main    endp
         end
