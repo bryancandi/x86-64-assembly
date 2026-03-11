@@ -1,0 +1,10 @@
+To assemble and link:
+    ml64.exe main.asm v_asc.asm v_bin1.asm v_hex1.asm /link /SUBSYSTEM:console /ENTRY:main
+
+To assemble, build a lib and link (must specify includelib v.lib in main.asm):
+    ml64.exe /c main.asm v_asc.asm v_bin1.asm v_hex1.asm
+    lib.exe /out:v.lib /verbose v_asc.obj v_bin1.obj v_hex1.obj
+    ml64.exe main.asm /link /SUBSYSTEM:console /ENTRY:main
+
+Single asm file:
+    ml64.exe main.asm /link /SUBSYSTEM:console /ENTRY:main
