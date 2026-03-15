@@ -1,0 +1,19 @@
+1. Line 19 (ADD AH,'0') of subroutine v_dig1 maps a binary digit to its
+ASCII equivalent. This limits subroutine v_dig1 to a maximum base of
+10. Modify v_dig1 to use a translation table as was done in subroutine
+v_hex1 in Chapter 7. Note: Register AL will have to be used, so a little
+extra coding will be needed besides the translation table and the XLAT
+instruction.
+
+2. Replace the disp macro calls to subroutines v_bin1 and v_hex1 in the
+main program with dispbs calls with base arguments of 2 and 16,
+respectively.
+
+3. Modify subroutine v_dig1 so that its output is right justified. This can
+actually be easier coding the the original, but be sure to initialize the
+dbuf buffer to blanks with each call to v_dig1.
+
+4. Generally, a signed number is negative if its high order bit is a one (bit 7
+= 1 for an 8-bit value). Modify v_dig1 to output a negative number as a
+minus sign followed by the negative (NEG instruction) of the original
+value.
