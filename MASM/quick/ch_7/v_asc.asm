@@ -44,7 +44,7 @@ v_asc   endp
 
 v_asc1  proc
         mov     R8, 1           ; Number of bytes requested to write.
-        ;lea     R9, nbwr        ; Returned with count of bytes written.
+        lea     R9, nbwr        ; Returned with count of bytes written.
         mov     RDX, R12        ; Memory address of buffer to write.
         mov     RCX, stdout     ; I/O handle for display monitor.
         sub     RSP, 40         ; Reserve "shadow" and 16 byte align.
