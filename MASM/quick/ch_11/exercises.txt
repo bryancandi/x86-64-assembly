@@ -1,0 +1,26 @@
+Review Questions
+
+1. The AVX instructions are similar to the SSE instructions except they use
+the YMM or ZMM registers and the instruction name begins with a “v”
+preceding the SSE instruction name (such as vpaddb). What would an
+equivalent AVX instruction for “PADDUSB XMM3,XMM3” be?
+
+2. * The packed arithmetic instructions do not set the carry and overflow
+flags. How could a program rather simply check for these conditions on
+every lane?
+
+3. For saturated arithmetic, there is both a signed and unsigned version
+(ADDUSB and ADDSB). Why is there only one version for unsaturated
+addition and subtraction?
+
+
+Programming Exercises
+
+1. Make a new version of the v_dec1 subroutine where it will consider bit
+7 to be the sign bit. If negative (i.e., bit 7 is set), then display the minus
+sign followed by the negative (NEG instruction) of the byte. Rerun the
+saturation samples with this new v_sdec1 subroutine.
+
+2. Make a new version of the v_dec1 subroutine where it will use 16 bit
+integers. Rerun the saturation samples with 16-bit PADDW instructions
+and this new new v_sdec2 subroutine.
