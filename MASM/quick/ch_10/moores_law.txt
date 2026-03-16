@@ -1,0 +1,3 @@
+“Moore’s Law” implies that computer performance will double every 18 months, mostly due to improvements in the
+packing density of transistors on integrated circuits. Oddly enough, this hasproven to be the case for over
+three decades, far longer than many of us thought possible.

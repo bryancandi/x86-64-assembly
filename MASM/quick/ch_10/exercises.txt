@@ -1,0 +1,21 @@
+Review Questions
+
+1. * In Listing 10.2, why does the program output _*_* as the last line
+echoed?
+
+2. On lines 58 and 64 of Listing 10.1, why is “qword ptr [cvt]” used
+instead of just “cvt”?
+
+3. Which logical instruction (AND, OR, or XOR) can clear all bits in a
+register to zero without using an immediate value of zero?
+
+4. Using a logical instruction with a 64-bit register such as RAX affects all
+64 bits of the register. In an instruction such as “AND EAX,0” using
+only the lower 32 bits, what happens in the upper 32 bits of RAX?
+
+
+Programming Exercises
+
+1. Modify Listing 10.1 to clear bit 5 of each byte which will effectively
+convert the first eight letters to upper case. One possible way to clear bit
+5 is to AND each byte with binary 11011111.
