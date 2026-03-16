@@ -1,0 +1,32 @@
+Review Questions
+
+1. Which combination of LODS and STOS in the copy as in Listing 9.4
+would be used to convert ASCII to Unicode?
+
+2. * Using the Scaled Index format, what instruction would implement
+ARRAY[I] = 6 if register DX contained the value 6, ARRAY is an array
+of 32-bit integers, and register R15 represents the index I?
+
+3. Why do arrays in most programming languages today begin with an
+index of zero instead of one? Also, why do we number bits within a
+register beginning with zero instead of one? Appendix G may have some
+hints.
+
+4. Why is the “little end” (i.e., the “low order” bit) of a register on the left?
+Wouldn’t that solve some of the confusion with little endian? Hint: See
+Appendix G.
+
+
+Programming Exercises
+
+1. Alter the string copy loop in Listing 9.1 to copy in the reverse direction
+(RSI and RDI being decremented). You will need the STD instruction
+and probably the LENGTHOF directive.
+
+2. Modify Listing 9.4 to convert from Unicode to ASCII. The
+ReadConsoleA function will have to be changed to ReadConsoleW to
+get Unicode, and the copy loop will need LODSW with LODSB.
+
+3. * Modify Listing 9.9 to copy the buffer from end to beginning by using
+register RCX as both the array index and loop counter. Hint: Use
+“R12,keymsg[8*RCX-8]” instead of “keymsg[8*R15]”
