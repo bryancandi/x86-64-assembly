@@ -1,0 +1,49 @@
+Review Questions
+
+1. * “By hand, without a computer,” convert the following real numbers
+into single precision IEEE 754 floating point and provide the answers in
+hexadecimal.
+a. 128.0
+b. 9.25
+c. -9.25
+d. 0.03125
+e. 128.03125
+f. 0.0
+g. -0.0
+
+2. * “By hand, without a computer,” convert the following IEEE 754
+floating point numbers from hexadecimal back into real numbers in base
+10.
+a. 42a80000
+b. C1A80000
+c. 424C8000
+d. BF100000
+e. 3DCCCCCD
+
+3. Which of the four ways to represent negative numbers described in
+Appendix G allows for both a positive and a negative zero?
+
+4. In IEEE 754 floating point format, zero is represented by both the
+significant and the exponent being zero. If this was not the case, what
+value, expressed as a power of 2, would a word of all zero bits
+represent?
+
+5. Why is it impossible to have a non-normalized IEEE 754 format
+“value”?
+
+6. * By examining Figure 12.1, what is the smallest absolute value nonzero normalized number?
+
+7. By examining Figure 12.1, what is the smallest absolute value non-zero
+de-normalized number?
+
+8. What type of data processing would work best with quiet NaN values?
+
+9. What type of data processing would work best with signaling NaN
+values?
+
+10. * Is getting that extra 1-bit of precision in the significant more important
+to the single precision, double precision, or half precision format
+numbers?
+
+11. * Why will multiplying by 0.1 always result in a loss of precision in
+binary computers?
