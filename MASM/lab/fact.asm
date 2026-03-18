@@ -94,7 +94,8 @@ main    proc
         cmp     argc, 2         ; Was a second arg provided?
         jne     error           ; No; print usage and exit.
         mov     argv, RAX       ; Store LPWSTR* argv array in argv.
-        mov     RCX, [argv+8]   ; Load argv[1] (first user argument) into RCX.
+        mov     RCX, [argv]     ; Load argv[0] (first argument - program name) into RCX.
+        mov     RCX, [RCX + 8]  ; Load argv[1] (first user argument) into RCX.
 
         call    StrToInt        ; Convert string in argv[1] to integer; result returned in RAX.
         mov     RCX, RAX        ; Move the integer into RCX for factorial calculation.
