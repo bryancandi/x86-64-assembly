@@ -108,11 +108,9 @@ main    proc
 
 exit:   xor     RCX, RCX        ; Exit code 0.
         call    ExitProcess
-        add     RSP, 40         ; Restore "shadow space" on stack (never reached; ExitProcess does not return).
 
 error:  msgOut  usage           ; Write error to console.
         msgOut  newln
         jmp     exit
-
 main    endp
         end

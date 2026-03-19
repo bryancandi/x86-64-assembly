@@ -31,9 +31,8 @@ main    proc
         lea     R9, nbwr                    ; Arg 4: pointer to variable to contain number of bytes written.
         call    WriteConsoleA               ; Function call to write text to console.
 
-;       Exit.
+;       Program exit.
         xor     RCX, RCX                    ; Set exit status code to zero.
         call    ExitProcess                 ; Call the ExitProcess function to exit the program.
-        add     RSP, 40                     ; Restore "shadow space" on stack (never reached; ExitProcess does not return).
 main    endp
         end
