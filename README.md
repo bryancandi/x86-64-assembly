@@ -28,6 +28,7 @@ A collection of small x86-64 assembly programs and experiments for learning purp
 - [x86-64 Register Calling Conventions](./docs/register-conventions.md)
 - [x86-64 Processor State Flags (RFLAGS)](./docs/processor-state-flags.md)
 - [GNU gdb Assembly Quick Reference](./docs/gdb.md)
+- [Windows x64 Shadow Space](./docs/shadow-space.md)
 
 ### 📖 External Documentation
 - [Microsoft Macro Assembler Reference](https://learn.microsoft.com/en-us/cpp/assembler/masm/microsoft-macro-assembler-reference)
