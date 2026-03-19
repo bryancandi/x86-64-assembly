@@ -3,7 +3,7 @@
 ; Repeatedly reads a line of input and echoes it back to the console.
 ; Terminates when an empty line (CRLF only) is entered.
 ;
-; Build:
+; Assemble with MASM and link:
 ; ml64.exe echo.asm /link /SUBSYSTEM:console /ENTRY:main
 ;-------------------------------------------------------------------------
 
