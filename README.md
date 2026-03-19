@@ -31,6 +31,7 @@ A collection of small x86-64 assembly programs and experiments for learning purp
 - [Windows x64 Shadow Space](./docs/shadow-space.md)
 
 ### 📖 External Documentation
+- [Intel® 64 and IA-32 Architectures Software Developer Manuals](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html)
+- [x64 Calling Convention](https://learn.microsoft.com/en-us/cpp/build/x64-calling-convention)
 - [Microsoft Macro Assembler Reference](https://learn.microsoft.com/en-us/cpp/assembler/masm/microsoft-macro-assembler-reference)
 - [The Netwide Assembler Manual](https://www.nasm.us/doc/)
-- [Intel® 64 and IA-32 Architectures Software Developer Manuals](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html)
