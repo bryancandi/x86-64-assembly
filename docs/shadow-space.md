@@ -5,6 +5,11 @@ Because the CALL instruction pushes an 8‑byte return address, the stack pointe
 be adjusted to maintain 16‑byte alignment at the moment of the call.
 Subtracting 40 bytes (32 shadow + 8 alignment) satisfies both requirements.
 
+The x64 Application Binary Interface (ABI) uses a four-register calling convention by default.
+Space is allocated on the call stack as a shadow store for callees to save those registers.
+It allows the called function (callee) to temporarily save (spill) its first four register arguments
+(`RCX`, `RDX`, `R8`, `R9`) to the stack.
+
 ```asm
 main    proc
         sub     RSP, 40             ; 32 bytes shadow space + 8 bytes for alignment.
