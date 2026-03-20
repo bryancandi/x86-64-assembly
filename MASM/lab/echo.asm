@@ -1,5 +1,5 @@
 ;-------------------------------------------------------------------------
-; x86-64 Assembly ECHO program for Windows console.
+; x64 ECHO program for Windows console.
 ; Repeatedly reads a line of input and echoes it back to the console.
 ; Terminates when an empty line (CRLF only) is entered.
 ;

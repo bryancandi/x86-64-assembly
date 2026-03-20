@@ -1,5 +1,5 @@
 ;--------------------------------------------------------------------
-; x86-64 Assembly "Hello, world!" program for Windows console.
+; x64 "Hello, world!" program for Windows console.
 ; Assemble with MASM and link:
 ; ml64.exe hello.asm /link /SUBSYSTEM:console /ENTRY:main
 ;--------------------------------------------------------------------

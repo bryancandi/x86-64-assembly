@@ -1,5 +1,5 @@
 ;--------------------------------------------------------------------
-; Factorial example for Windows x64 (MASM / ml64).
+; x64 Factorial example for Windows console.
 ; Assemble with MASM and link:
 ; ml64.exe fact.asm /link /SUBSYSTEM:console /ENTRY:main
 ;--------------------------------------------------------------------
