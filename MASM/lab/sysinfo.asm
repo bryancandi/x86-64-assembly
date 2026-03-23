@@ -34,6 +34,7 @@ bufOut  macro   buf                         ; Single argment macro to call write
 tmsg    byte    "System Information Utility", 0DH, 0AH ; User prompt message.
 cpuven  byte    "CPU Vendor : "
 cpunam  byte    "CPU Model  : "
+cpucor  byte    "CPU Cores  : "
 newln   byte    0DH, 0AH                    ; Carriage return and line feed.
 tab     byte    09H                         ; Tab character.
 cpubuf  dword   MaxBuf DUP (?)              ; Input buffer of MaxBuf size.
@@ -43,6 +44,29 @@ nbwr    dword   ?                           ; Number of bytes (characters) actua
 nbrd    dword   ?                           ; Number of bytes (characters) actually read.
 
         .code
+; Convert integer value in ECX to string.
+Int2Str  proc
+        push    RBX
+
+        mov     EBX, 10                     ; Divisor.
+        xor     R8D, R8D                    ; Length = 0
+
+convert_loop:
+        xor     EDX, EDX                    ; Clear EDX for division.
+        div     EBX                         ; EAX = quotient, EDX = remainder.
+        add     DL, '0'                     ; Remainder to ASCII digit.
+        dec     RDI
+        mov     [RDI], DL                   ; Store digit.
+        inc     R8D                         ; Length++
+        test    EAX, EAX
+        jnz     convert_loop
+
+        mov     RAX, RDI                    ; Return pointer to first digit.
+
+        pop     RBX
+        ret
+Int2Str  endp
+
 GetCpuVend  proc
         push    RBX                         ; Preserve RBX register.
 
@@ -90,6 +114,36 @@ GetCpuBrand  proc
         ret
 GetCpuBrand  endp
 
+; Return CPU core count in EAX.
+GetCpuCores  proc
+        push    RBX
+
+        mov     EAX, 0                      ; Load vendor string.
+        cpuid
+        cmp     EBX, 'Auth'                 ; Check for first part of "AuthenticAMD" in vendor string.
+        je      amd_proc
+
+;       Intel processor
+        mov     EAX, 4
+        xor     ECX, ECX                    ; Sub-leaf: 0
+        cpuid
+        shr     EAX, 26                     ; Shift bits 31:26 to bottom
+        inc     EAX                         ; Core count in EAX.
+        jmp     done
+
+;       AMD Processor
+amd_proc:
+        mov     EAX, 80000008h
+        cpuid
+        and     ECX, 0FFh                   ; Mask bits 7:0
+        inc     ECX                         ; Core count in ECX.
+        mov     EAX, ECX                    ; Normalize: core count in EAX.
+
+done:
+        pop     RBX
+        ret
+GetCpuCores  endp
+
 main    proc
         sub     RSP, 40                     ; Reserve "shadow space" on stack for 4 args (32 shadow + 8 alignment).
 
@@ -113,8 +167,21 @@ main    proc
         bufOut  cpubuf
         strOut  newln
 
+        call    GetCpuCores
+        lea     RDI, cpubuf+200
+        call    Int2Str
+        mov     nbrd, R8D
+        ; Copy result to cpubuf:
+        mov     RSI, RAX                    ; Source pointer (start of string from Int2Str).
+        lea     RDI, cpubuf                 ; Destination buffer.
+        mov     ECX, R8D                    ; Number of bytes to copy.
+        rep     movsb                       ; Copy ECX bytes from [RSI] to [RDI].
+        strOut  cpucor
+        bufOut  cpubuf
+        strOut  newln
+
 ;       Program exit.
-exit:   xor     RCX, RCX                    ; Set exit status code to zero.
-        call    ExitProcess                 ; Call the ExitProcess function to exit the program.
+exit:   xor     RCX, RCX
+        call    ExitProcess
 main    endp
         end
