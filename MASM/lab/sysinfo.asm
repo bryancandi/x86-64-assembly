@@ -44,7 +44,7 @@ nbwr    dword   ?                           ; Number of bytes (characters) actua
 nbrd    dword   ?                           ; Number of bytes (characters) actually read.
 
         .code
-; Convert integer value in ECX to string.
+; Convert integer value in EAX to string.
 Int2Str  proc
         push    RBX
 
@@ -168,7 +168,7 @@ main    proc
         strOut  newln
 
         call    GetCpuCores
-        lea     RDI, cpubuf+200
+        lea     RDI, cpubuf + 200
         call    Int2Str
         mov     nbrd, R8D
         ; Copy result to cpubuf:
