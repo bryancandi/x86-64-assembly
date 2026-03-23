@@ -7,9 +7,10 @@
 
 includelib kernel32.lib                     ; Import Kernel32 library (Windows API).
 
-ExitProcess     proto                       ; Terminate the current process.
-GetStdHandle    proto                       ; Retrieve a handle to a standard device (input/output).
-WriteConsoleA   proto                       ; Write a buffer of characters to the console.
+ExitProcess             proto               ; Terminate the current process.
+GetStdHandle            proto               ; Retrieve a handle to a standard device (input/output).
+WriteConsoleA           proto               ; Write a buffer of characters to the console.
+GlobalMemoryStatusEx    proto               ; Retrieve information about the system's memory usage.
 
 STD_OUTPUT_HANDLE equ    -11                ; Device code for console output.
 MaxBuf            equ    100                ; Maximum buffer size.
@@ -30,35 +31,52 @@ bufOut  macro   buf                         ; Single argment macro to write 'nbr
         call    WriteConsoleA
         endm
 
+MEMORYSTATUSEX STRUCT
+    dwLength                    dword   ?
+    dwMemoryLoad                dword   ?
+    ullTotalPhys                qword   ?
+    ullAvailPhys                qword   ?
+    ullTotalPageFile            qword   ?
+    ullAvailPageFile            qword   ?
+    ullTotalVirtual             qword   ?
+    ullAvailVirtual             qword   ?
+    ullAvailExtendedVirtual     qword   ?
+MEMORYSTATUSEX ENDS
+
         .data
-tmsg    byte    "System Information Utility"
+msEx    MEMORYSTATUSEX <>                   ; Allocate and zero-initialize an instance
+tmsg    byte    "Processor Information:", 0DH, 0AH
 cpuven  byte    "CPU Vendor : "
 cpunam  byte    "CPU Model  : "
 cpucor  byte    "CPU Cores  : "
+mmsg    byte    "Memory Information:", 0DH, 0AH
+memtot  byte    "Memory Total : "
+errmsg  byte    "Error", 0DH, 0AH
 newln   byte    0DH, 0AH                    ; Carriage return and line feed.
 tab     byte    09H                         ; Tab character.
-cpubuf  dword   MaxBuf DUP (?)              ; Buffer of MaxBuf size.
+cpubuf  dword   MaxBuf DUP (?)              ; 32-bit buffer of MaxBuf size.
+membuf  qword   MaxBuf DUP (?)              ; 64-bit buffer of MaxBuf size.
 stdin   qword   ?                           ; Handle to standard input device.
 stdout  qword   ?                           ; Handle to standard output device.
 nbwr    dword   ?                           ; Number of bytes (characters) actually written.
 nbrd    dword   ?                           ; Number of bytes (characters) actually read.
 
         .code
-; Convert integer value in EAX to string.
+; Convert integer value to a string.
 Int2Str  proc
         push    RBX                         ; Preserve RBX register.
 
-        mov     EBX, 10                     ; Divisor (10).
+        mov     RBX, 10                     ; Divisor (10).
         xor     R8D, R8D                    ; Initial string length = 0
 
 convert_loop:
-        xor     EDX, EDX                    ; Clear EDX for division.
-        div     EBX                         ; EAX = quotient, EDX = remainder.
+        xor     RDX, RDX                    ; Clear RDX for division.
+        div     RBX                         ; RAX = quotient, RDX = remainder.
         add     DL, '0'                     ; Remainder to ASCII digit.
         dec     RDI
         mov     [RDI], DL                   ; Store digit.
         inc     R8D                         ; Length + 1
-        test    EAX, EAX
+        test    RAX, RAX
         jnz     convert_loop
 
         mov     RAX, RDI                    ; Return pointer to first digit.
@@ -114,7 +132,7 @@ GetCpuBrand  proc
         ret
 GetCpuBrand  endp
 
-; Return CPU core count in EAX.
+; Return CPU core count as integer in EAX.
 GetCpuCores  proc
         push    RBX
 
@@ -154,7 +172,6 @@ main    proc
 
 ;       Print title message.
         strOut  tmsg
-        strOut  newln
 
 ;       Print CPU data strings.
         call    GetCpuVend
@@ -180,8 +197,33 @@ main    proc
         bufOut  cpubuf
         strOut  newln
 
+;       Print memory data.
+        mov     msEx.dwLength, SIZEOF MEMORYSTATUSEX
+        lea     RCX, msEx
+        call    GlobalMemoryStatusEx
+        test    RAX, RAX                    ; 0 = failure; 1 = success
+        jz      mem_fail
+        mov     RAX, msEx.ullTotalPhys      ; Load qword from struct.
+        lea     RDI,    membuf + MaxBuf
+        call    Int2Str
+        mov     nbrd, R8D
+        ; Copy result to membuf:
+        mov     RSI, RAX
+        lea     RDI, membuf
+        mov     ECX, R8D
+        rep     movsb
+        strOut  newln
+        strOut  mmsg
+        strOut  memtot
+        bufOut  membuf
+
 ;       Program exit.
-exit:   xor     RCX, RCX
+exit:
+        xor     RCX, RCX
         call    ExitProcess
+
+mem_fail:
+        strOut  errmsg
+        jmp     exit
 main    endp
         end
