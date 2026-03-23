@@ -12,32 +12,32 @@ GetStdHandle    proto                       ; Retrieve a handle to a standard de
 WriteConsoleA   proto                       ; Write a buffer of characters to the console.
 
 STD_OUTPUT_HANDLE equ    -11                ; Device code for console output.
-MaxBuf            equ    100                ; Maximum input buffer size.
+MaxBuf            equ    100                ; Maximum buffer size.
 
-strOut  macro   msg                         ; Single argment macro to call write a string to console (WhiteConsoleW).
+strOut  macro   msg                         ; Single argment macro to write a string to the console.
         mov     RCX, stdout                 ; Arg 1: output device handle.
         lea     RDX, msg                    ; Arg 2: pointer to byte array.
         mov     R8, lengthof msg            ; Arg 3: number of bytes to write.
         lea     R9, nbwr                    ; Arg 4: pointer to variable that receives number of bytes written.
-        call    WriteConsoleA               ; Function call to write to console.
+        call    WriteConsoleA
         endm
 
-bufOut  macro   buf                         ; Single argment macro to call write contents of a buffer to console (WhiteConsoleW).
+bufOut  macro   buf                         ; Single argment macro to write 'nbrd' bytes of a buffer to the console.
         mov     RCX, stdout                 ; Arg 1: output device handle.
         lea     RDX, buf                    ; Arg 2: pointer to byte array.
         mov     R8d, [nbrd]                 ; Arg 3: number of bytes to write.
         lea     R9, nbwr                    ; Arg 4: pointer to variable that receives number of bytes written.
-        call    WriteConsoleA               ; Function call to write to console.
+        call    WriteConsoleA
         endm
 
         .data
-tmsg    byte    "System Information Utility", 0DH, 0AH ; User prompt message.
+tmsg    byte    "System Information Utility"
 cpuven  byte    "CPU Vendor : "
 cpunam  byte    "CPU Model  : "
 cpucor  byte    "CPU Cores  : "
 newln   byte    0DH, 0AH                    ; Carriage return and line feed.
 tab     byte    09H                         ; Tab character.
-cpubuf  dword   MaxBuf DUP (?)              ; Input buffer of MaxBuf size.
+cpubuf  dword   MaxBuf DUP (?)              ; Buffer of MaxBuf size.
 stdin   qword   ?                           ; Handle to standard input device.
 stdout  qword   ?                           ; Handle to standard output device.
 nbwr    dword   ?                           ; Number of bytes (characters) actually written.
@@ -46,10 +46,10 @@ nbrd    dword   ?                           ; Number of bytes (characters) actua
         .code
 ; Convert integer value in EAX to string.
 Int2Str  proc
-        push    RBX
+        push    RBX                         ; Preserve RBX register.
 
-        mov     EBX, 10                     ; Divisor.
-        xor     R8D, R8D                    ; Length = 0
+        mov     EBX, 10                     ; Divisor (10).
+        xor     R8D, R8D                    ; Initial string length = 0
 
 convert_loop:
         xor     EDX, EDX                    ; Clear EDX for division.
@@ -57,18 +57,18 @@ convert_loop:
         add     DL, '0'                     ; Remainder to ASCII digit.
         dec     RDI
         mov     [RDI], DL                   ; Store digit.
-        inc     R8D                         ; Length++
+        inc     R8D                         ; Length + 1
         test    EAX, EAX
         jnz     convert_loop
 
         mov     RAX, RDI                    ; Return pointer to first digit.
 
-        pop     RBX
+        pop     RBX                         ; Restore RBX.
         ret
 Int2Str  endp
 
 GetCpuVend  proc
-        push    RBX                         ; Preserve RBX register.
+        push    RBX
 
         mov     EAX, 0                      ; CPUID leaf 0 = vendor.
         cpuid                               ; CPUID instruction.
@@ -79,7 +79,7 @@ GetCpuVend  proc
         mov     byte ptr [cpubuf + 12], 0   ; Null terminate string (not needed for WriteConsoleA; remove?).
         mov     nbrd, 12                    ; Set number of bytes to write for WriteConsoleA.
 
-        pop     RBX                         ; Restore RBX.
+        pop     RBX
         ret
 GetCpuVend  endp
 
@@ -120,7 +120,7 @@ GetCpuCores  proc
 
         mov     EAX, 0                      ; Load vendor string.
         cpuid
-        cmp     EBX, 'Auth'                 ; Check for first part of "AuthenticAMD" in vendor string.
+        cmp     EBX, 'Auth'                 ; Check for the first part of "AuthenticAMD" in vendor string.
         je      amd_proc
 
 ;       Intel processor
@@ -157,7 +157,7 @@ main    proc
         strOut  newln
 
 ;       Print CPU data strings.
-        call    GetCpuVend                  ; Call function to write CPU vendor to buffer.
+        call    GetCpuVend
         strOut  cpuven
         bufOut  cpubuf
         strOut  newln
@@ -168,7 +168,7 @@ main    proc
         strOut  newln
 
         call    GetCpuCores
-        lea     RDI, cpubuf + 200
+        lea     RDI, cpubuf + MaxBuf
         call    Int2Str
         mov     nbrd, R8D
         ; Copy result to cpubuf:
