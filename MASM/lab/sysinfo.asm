@@ -50,7 +50,8 @@ cpuven  byte    "CPU Vendor : "
 cpunam  byte    "CPU Model  : "
 cpucor  byte    "CPU Cores  : "
 mmsg    byte    "Memory Information:", 0DH, 0AH
-memtot  byte    "Memory Total : "
+memtot  byte    "RAM Total : "
+memfre  byte    "RAM Free  : "
 errmsg  byte    "Error", 0DH, 0AH
 newln   byte    0DH, 0AH                    ; Carriage return and line feed.
 tab     byte    09H                         ; Tab character.
@@ -203,6 +204,8 @@ main    proc
         call    GlobalMemoryStatusEx
         test    RAX, RAX                    ; 0 = failure; 1 = success
         jz      mem_fail
+
+;       RAM total
         mov     RAX, msEx.ullTotalPhys      ; Load qword from struct.
         lea     RDI,    membuf + MaxBuf
         call    Int2Str
@@ -217,11 +220,26 @@ main    proc
         strOut  memtot
         bufOut  membuf
 
+;       RAM available
+        mov     RAX, msEx.ullAvailPhys      ; Load qword from struct.
+        lea     RDI,    membuf + MaxBuf
+        call    Int2Str
+        mov     nbrd, R8D
+        ; Copy result to membuf:
+        mov     RSI, RAX
+        lea     RDI, membuf
+        mov     ECX, R8D
+        rep     movsb
+        strOut  newln
+        strOut  memfre
+        bufOut  membuf
+
 ;       Program exit.
 exit:
         xor     RCX, RCX
         call    ExitProcess
 
+;       GlobalMemoryStatusEx failure.
 mem_fail:
         strOut  errmsg
         jmp     exit
