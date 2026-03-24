@@ -13,9 +13,13 @@ WriteConsoleA           proto               ; Write a buffer of characters to th
 GlobalMemoryStatusEx    proto               ; Retrieve information about the system's memory usage.
 GetTickCount64          proto               ; Returns 64-bit tick count in RAX.
 
-STD_OUTPUT_HANDLE equ    -11                ; Device code for console output.
-MaxBuf            equ    100                ; Maximum buffer size.
-BytesInGB         equ    1024 * 1024 * 1024 ; 1 GB in bytes.
+STD_OUTPUT_HANDLE equ   -11                 ; Device code for console output.
+MaxBuf            equ   100                 ; Maximum buffer size.
+BytesPerGib       equ   1024 * 1024 * 1024  ; Bytes per Gibibyte.
+MsPerSecond       equ   1000                ; Milliseconds per second.
+SecPerDay         equ   86400               ; Seconds per day.
+SecPerHour        equ   3600                ; Seconds per hour.
+SecPerMinute      equ   60                  ; Seconds per minute.
 
 strOut  macro   msg                         ; Single argment macro to write a string to the console.
         mov     RCX, stdout                 ; Arg 1: output device handle.
@@ -33,18 +37,43 @@ bufOut  macro   buf                         ; Single argment macro to write 'nbr
         call    WriteConsoleA
         endm
 
-byte2g  macro                               ; Convert bytes in RAX to GB, rounding up (clobbers: RAX, RDX, R8).
+byte2Gb macro                               ; Convert bytes in RAX to GB, rounding up (clobbers: RAX, RDX, R8).
         xor     RDX, RDX
-        mov     R8, BytesInGB               ; R8 = 1 GB in bytes.
+        mov     R8, BytesPerGib             ; R8 = 1 GB in bytes.
         add     RAX, R8                     ; Add 1 GB to value to achieve rounding up.
         dec     RAX                         ; Subtract 1 so integer division gives ceiling.
         div     R8                          ; RAX = bytes / GB.
         endm
 
-fmttime macro                               ; Convert from milliseconds to seconds (clobbers: RAX, RDX, R8).
+timeFmt macro                               ; Convert from milliseconds to seconds (clobbers: RAX, RDX, R8).
+        xor     RDX, RDX                    ; Clear RDX for division.
+        mov     R8, MsPerSecond
+        div     R8                          ; RAX = RAX/1000 milliseconds.
+
+        ; Seconds can now be converted to Days, Hours, Minutes.
+;       Days:
         xor     RDX, RDX
-        mov     R8, 1000                    ; 1 sec = 1000 ms.
-        div     R8                          ; RAX = RAX/1000.
+        mov     R8, SecPerDay
+        div     R8                          ; RAX = days, RDX = remaining seconds.
+        mov     [days], RAX                 ; Store result.
+        mov     RAX, RDX                    ; Carry remainder forward.
+
+;       Hours:
+        xor     RDX, RDX
+        mov     R8, SecPerHour
+        div     R8
+        mov     [hours], RAX
+        mov     RAX, RDX
+
+;       Minutes
+        xor     RDX, RDX
+        mov     R8, SecPerMinute
+        div     R8
+        mov     [minutes], RAX
+        mov     RAX, RDX
+
+;       Seconds:
+        mov     [seconds], RAX
         endm
 
 copyStr macro   dest                        ; Copy string from [RAX] (length in R8D) into destination buffer (clobbers: RSI, RDI, RCX).
@@ -53,7 +82,7 @@ copyStr macro   dest                        ; Copy string from [RAX] (length in 
         lea     RDI, dest                   ; Destination buffer.
         mov     ECX, R8D                    ; Number of bytes to copy.
         rep     movsb                       ; Copy ECX bytes from [RSI] to [RDI].
-endm
+        endm
 
 MEMORYSTATUSEX STRUCT
     dwLength                    dword   ?
@@ -68,27 +97,34 @@ MEMORYSTATUSEX STRUCT
 MEMORYSTATUSEX ENDS
 
         .data
-msEx    MEMORYSTATUSEX <>                   ; Allocate and zero-initialize an instance
-tmsg    byte    "--- Processor Information ---", 0DH, 0AH
-cpuven  byte    "CPU Vendor : "
-cpunam  byte    "CPU Model  : "
-cpucor  byte    "CPU Cores  : "
-mmsg    byte    "--- Memory Information ---", 0DH, 0AH
-memtot  byte    "RAM Total : "
-memfre  byte    "RAM Free  : "
-gbyte   byte    " GB"
-umsg    byte    "--- System Uptime ---", 0DH, 0AH
-secs    byte    " seconds"
-errmsg  byte    "Error: Unable to retrieve memory information.", 0DH, 0AH
-newln   byte    0DH, 0AH                    ; Carriage return and line feed.
-tab     byte    09H                         ; Tab character.
-cpubuf  dword   MaxBuf DUP (?)              ; CPU strings buffer.
-membuf  dword   MaxBuf DUP (?)              ; Memory data buffer.
-tickbuf dword   MaxBuf DUP (?)              ; Formatted uptime buffer.
-stdin   qword   ?                           ; Handle to standard input device.
-stdout  qword   ?                           ; Handle to standard output device.
-nbwr    dword   ?                           ; Number of bytes (characters) actually written.
-nbrd    dword   ?                           ; Number of bytes (characters) actually read.
+msEx            MEMORYSTATUSEX <>           ; Allocate and zero-initialize an instance
+cpubuf          dword   MaxBuf DUP (?)      ; CPU strings buffer.
+membuf          dword   MaxBuf DUP (?)      ; Memory data buffer.
+timebuf         dword   MaxBuf DUP (?)      ; Uptime buffer.
+newln           byte    0DH, 0AH            ; Carriage return and line feed.
+tab             byte    09H                 ; Tab character.
+cpu_title       byte    "--- Processor Information ---", 0DH, 0AH
+cpu_vendor      byte    "CPU Vendor : "
+cpu_name        byte    "CPU Model  : "
+cpu_cores       byte    "CPU Cores  : "
+mem_title       byte    "--- Memory Information ---", 0DH, 0AH
+mem_total       byte    "RAM Total : "
+mem_free        byte    "RAM Free  : "
+mem_error       byte    "Error: Unable to retrieve memory information.", 0DH, 0AH
+gb_label        byte    " GB"
+uptime_title    byte    "--- System Uptime ---", 0DH, 0AH
+days            qword   ?                   ; Uptime days value.
+days_label      byte    " days, "
+hours           qword   ?                   ; Uptime hours value.
+hours_label     byte    " hours, "
+minutes         qword   ?                   ; Uptime minutes value.
+minutes_label   byte    " minutes, "
+seconds         qword   ?                   ; Uptime seconds value.
+seconds_label   byte    " seconds"
+stdin           qword   ?                   ; Handle to standard input device.
+stdout          qword   ?                   ; Handle to standard output device.
+nbwr            dword   ?                   ; Number of bytes (characters) actually written.
+nbrd            dword   ?                   ; Number of bytes (characters) actually read.
 
         .code
 ; Convert integer value to a string.
@@ -199,17 +235,16 @@ main    proc
         call    GetStdHandle                ; Return handle to standard output.
         mov     stdout, RAX                 ; Store the handle for console output.
 
-;       Print title message.
-        strOut  tmsg
+;       Processor section:
+        strOut  cpu_title
 
-;       Print CPU data strings.
         call    GetCpuVend
-        strOut  cpuven
+        strOut  cpu_vendor
         bufOut  cpubuf
         strOut  newln
 
         call    GetCpuBrand
-        strOut  cpunam
+        strOut  cpu_name
         bufOut  cpubuf
         strOut  newln
 
@@ -217,58 +252,75 @@ main    proc
         lea     RDI, cpubuf + MaxBuf
         call    Int2Str
         copyStr cpubuf                      ; Copy result in RAX to cpubuf.
-        ; Print
-        strOut  cpucor
+        strOut  cpu_cores
         bufOut  cpubuf
         strOut  newln
 
-;       Print memory data.
+;       Memory section:
         mov     msEx.dwLength, SIZEOF MEMORYSTATUSEX
         lea     RCX, msEx
         call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer).
         test    RAX, RAX                    ; 0 = failure; 1 = success
         jnz     mem_success
-        strOut  errmsg                      ; Notify user memory info is unavailable.
+        strOut  mem_error                   ; Notify user memory info is unavailable.
         jmp     mem_skip
 
 mem_success:
 ;       RAM total
         mov     RAX, msEx.ullTotalPhys      ; Load qword from struct.
-        byte2g                              ; Call macro to convert from bytes to GB.
+        byte2Gb                             ; Call macro to convert from bytes to GB.
         lea     RDI,    membuf + MaxBuf
         call    Int2Str
         copyStr membuf                      ; Copy result in RAX to membuf.
-        ; Print
         strOut  newln
-        strOut  mmsg
-        strOut  memtot
+        strOut  mem_title
+        strOut  mem_total
         bufOut  membuf
-        strOut  gbyte
+        strOut  gb_label
 
 ;       RAM available
         mov     RAX, msEx.ullAvailPhys      ; Load qword from struct.
-        byte2g
+        byte2Gb
         lea     RDI,    membuf + MaxBuf
         call    Int2Str
         copyStr membuf                      ; Copy result in RAX to membuf.
-        ; Print
         strOut  newln
-        strOut  memfre
+        strOut  mem_free
         bufOut  membuf
-        strOut  gbyte
+        strOut  gb_label
         strOut  newln
 mem_skip:
 
-;       Print system uptime.
-        call    GetTickCount64
-        fmttime                             ; Call macro to format milliseconds into formatted time.
-        call    Int2Str
-        copyStr tickbuf                     ; Copy result in RAX to tickbuf.
-        ; Print
+;       Uptime section:
         strOut  newln
-        strOut  umsg
-        bufOut  tickbuf
-        strOut  secs
+        strOut  uptime_title
+
+        call    GetTickCount64
+        timeFmt                             ; Call macro to convert milliseconds to readable format.
+
+        mov     RAX, [days]
+        call    Int2Str
+        copyStr timebuf                     ; Copy result in RAX to timebuf.
+        bufOut  timebuf
+        strOut  days_label
+
+        mov     RAX, [hours]
+        call    Int2Str
+        copyStr timebuf
+        bufOut  timebuf
+        strOut  hours_label
+
+        mov     RAX, [minutes]
+        call    Int2Str
+        copyStr timebuf
+        bufOut  timebuf
+        strOut  minutes_label
+
+        mov     RAX, [seconds]
+        call    Int2Str
+        copyStr timebuf
+        bufOut  timebuf
+        strOut  seconds_label
         strOut  newln
 
 ;       Program exit.
