@@ -37,18 +37,29 @@ bufOut  macro   buf                         ; Single argment macro to write 'nbr
         call    WriteConsoleA
         endm
 
-byte2Gb macro                               ; Convert bytes in RAX to GB, rounding up (clobbers: RAX, RDX, R8).
+byte2Gb macro                               ; Convert bytes in RAX to GiB whole/fractional portions (clobbers: RAX, RDX, R8).
+        LOCAL trim_loop, skip_loop          ; Declare labels as local for macro.
         xor     RDX, RDX
-        mov     R8, BytesPerGib             ; R8 = 1 GB in bytes.
-        add     RAX, R8                     ; Add 1 GB to value to achieve rounding up.
-        dec     RAX                         ; Subtract 1 so integer division gives ceiling.
-        div     R8                          ; RAX = bytes / GB.
+        mov     R8, BytesPerGib             ; R8 = 1 GiB in bytes.
+        div     R8                          ; RAX = RAX/R8, RDX = remainder.
+
+        ; RAX = whole portion of result, RDX = fractional portion of result.
+        mov     [gibi_whole], RAX           ; Store whole portion.
+
+        ; Scale remainder to 2 decimal digits: (remainder * 100) / GiB
+        mov     RAX, RDX                    ; Move remainder into RAX.
+        mov     R8, 100
+        mul     R8                          ; Multiply by 100 to convert fractional GiB into a 2-digit integer (shift decimal right).
+        mov     R8, BytesPerGib
+        div     R8                          ; (remainder * 100) / GiB
+        mov     [gibi_fract], RAX           ; Store fractional portion.
         endm
 
-timeFmt macro                               ; Convert from milliseconds to seconds (clobbers: RAX, RDX, R8).
+timeFmt macro                               ; Convert from milliseconds to readable values (clobbers: RAX, RDX, R8).
+        ; RAX contains uptime in milliseconds at call time.
         xor     RDX, RDX                    ; Clear RDX for division.
-        mov     R8, MsPerSecond
-        div     R8                          ; RAX = RAX/1000 milliseconds.
+        mov     R8, MsPerSecond             ; Divisor in R8 = milliseconds per second.
+        div     R8                          ; RAX = seconds.
 
         ; Seconds can now be converted to Days, Hours, Minutes.
 ;       Days:
@@ -111,7 +122,10 @@ mem_title       byte    "--- Memory Information ---", 0DH, 0AH
 mem_total       byte    "RAM Total : "
 mem_free        byte    "RAM Free  : "
 mem_error       byte    "Error: Unable to retrieve memory information.", 0DH, 0AH
-gb_label        byte    " GB"
+gibi_whole      qword   ?                   ; Store whole portion of RAM size.
+gibi_fract      qword   ?                   ; Store fractional portion of RAM size.
+gib_label       byte    " GiB"
+decimal_pt      byte    "."
 uptime_title    byte    "--- System Uptime ---", 0DH, 0AH
 days            qword   ?                   ; Uptime days value.
 days_label      byte    " days, "
@@ -127,8 +141,7 @@ nbwr            dword   ?                   ; Number of bytes (characters) actua
 nbrd            dword   ?                   ; Number of bytes (characters) actually read.
 
         .code
-; Convert integer value to a string.
-Int2Str  proc
+Int2Str  proc                               ; Convert integer in RAX to ASCII string in buffer pointed to by RDI. Digits are stored in reverse order.
         push    RBX                         ; Preserve RBX register.
 
         mov     RBX, 10                     ; Divisor (10).
@@ -150,7 +163,7 @@ convert_loop:
         ret
 Int2Str  endp
 
-GetCpuVend  proc
+GetCpuVend  proc                            ; Get CPU vendor string.
         push    RBX
 
         mov     EAX, 0                      ; CPUID leaf 0 = vendor.
@@ -166,7 +179,7 @@ GetCpuVend  proc
         ret
 GetCpuVend  endp
 
-GetCpuBrand  proc
+GetCpuBrand  proc                           ; Get CPU brand string.
         push    RBX
 
         mov     EAX, 80000002h              ; 80000002h - 80000004h = processor brand string.
@@ -197,8 +210,7 @@ GetCpuBrand  proc
         ret
 GetCpuBrand  endp
 
-; Return CPU core count as integer in EAX.
-GetCpuCores  proc
+GetCpuCores  proc                           ; Return CPU core count as integer in EAX.
         push    RBX
 
         mov     EAX, 0                      ; Load vendor string.
@@ -249,7 +261,7 @@ main    proc
         strOut  newln
 
         call    GetCpuCores
-        lea     RDI, cpubuf + MaxBuf
+        lea     RDI, cpubuf + MaxBuf        ; Destination buffer + end position.
         call    Int2Str
         copyStr cpubuf                      ; Copy result in RAX to cpubuf.
         strOut  cpu_cores
@@ -266,28 +278,51 @@ main    proc
         jmp     mem_skip
 
 mem_success:
-;       RAM total
-        mov     RAX, msEx.ullTotalPhys      ; Load qword from struct.
-        byte2Gb                             ; Call macro to convert from bytes to GB.
-        lea     RDI,    membuf + MaxBuf
-        call    Int2Str
-        copyStr membuf                      ; Copy result in RAX to membuf.
         strOut  newln
         strOut  mem_title
-        strOut  mem_total
-        bufOut  membuf
-        strOut  gb_label
 
-;       RAM available
-        mov     RAX, msEx.ullAvailPhys      ; Load qword from struct.
-        byte2Gb
-        lea     RDI,    membuf + MaxBuf
+;       RAM total section
+        strOut  mem_total
+        mov     RAX, msEx.ullTotalPhys      ; Load qword from struct.
+        byte2Gb                             ; Call macro to convert from bytes to GiB.
+
+        ; Whole portion:
+        mov     RAX, [gibi_whole]           ; Move first part of size into RAX to convert to string.
+        lea     RDI, membuf + MaxBuf        ; Destination buffer + end position.
         call    Int2Str
         copyStr membuf                      ; Copy result in RAX to membuf.
-        strOut  newln
-        strOut  mem_free
+        bufOut  membuf                      ; Print whole portion of RAM size.
+        strOut  decimal_pt
+
+        ; Fractional portion:
+        mov     RAX, [gibi_fract]           ; Move second part of size into RAX to convert to string.
+        lea     RDI, membuf + MaxBuf        ; Destination buffer + end position.
+        call    Int2Str
+        copyStr membuf
         bufOut  membuf
-        strOut  gb_label
+        strOut  gib_label
+        strOut  newln
+
+;       RAM available section
+        strOut  mem_free
+        mov     RAX, msEx.ullAvailPhys      ; Load qword from struct.
+        byte2Gb
+
+        ; Whole portion:
+        mov     RAX, [gibi_whole]           ; Move first part of size into RAX to convert to string.
+        lea     RDI, membuf + MaxBuf        ; Destination buffer + end position.
+        call    Int2Str
+        copyStr membuf                      ; Copy result in RAX to membuf.
+        bufOut  membuf                      ; Print whole portion of RAM size.
+        strOut  decimal_pt
+
+        ; Fractional portion:
+        mov     RAX, [gibi_fract]           ; Move second part of size into RAX to convert to string.
+        lea     RDI, membuf + MaxBuf        ; Destination buffer + end position.
+        call    Int2Str
+        copyStr membuf
+        bufOut  membuf
+        strOut  gib_label
         strOut  newln
 mem_skip:
 
@@ -295,28 +330,32 @@ mem_skip:
         strOut  newln
         strOut  uptime_title
 
-        call    GetTickCount64
-        timeFmt                             ; Call macro to convert milliseconds to readable format.
+        call    GetTickCount64              ; RAX = uptime in milliseconds.
+        timeFmt                             ; Convert milliseconds and store in 'days', 'hours', 'minutes', 'seconds'.
 
         mov     RAX, [days]
+        lea     RDI, timebuf + MaxBuf       ; Destination buffer + end position.
         call    Int2Str
         copyStr timebuf                     ; Copy result in RAX to timebuf.
         bufOut  timebuf
         strOut  days_label
 
         mov     RAX, [hours]
+        lea     RDI, timebuf + MaxBuf
         call    Int2Str
         copyStr timebuf
         bufOut  timebuf
         strOut  hours_label
 
         mov     RAX, [minutes]
+        lea     RDI, timebuf + MaxBuf
         call    Int2Str
         copyStr timebuf
         bufOut  timebuf
         strOut  minutes_label
 
         mov     RAX, [seconds]
+        lea     RDI, timebuf + MaxBuf
         call    Int2Str
         copyStr timebuf
         bufOut  timebuf
@@ -328,6 +367,6 @@ exit:
         xor     RCX, RCX
         call    ExitProcess
 
-;       Program end.
+;       Main procedure and program end.
 main    endp
         end
