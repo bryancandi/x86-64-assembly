@@ -11,9 +11,11 @@ ExitProcess             proto               ; Terminate the current process.
 GetStdHandle            proto               ; Retrieve a handle to a standard device (input/output).
 WriteConsoleA           proto               ; Write a buffer of characters to the console.
 GlobalMemoryStatusEx    proto               ; Retrieve information about the system's memory usage.
+GetTickCount64          proto               ; Returns 64-bit tick count in RAX.
 
 STD_OUTPUT_HANDLE equ    -11                ; Device code for console output.
 MaxBuf            equ    100                ; Maximum buffer size.
+BytesInGB         equ    1024 * 1024 * 1024 ; 1 GB in bytes.
 
 strOut  macro   msg                         ; Single argment macro to write a string to the console.
         mov     RCX, stdout                 ; Arg 1: output device handle.
@@ -31,6 +33,28 @@ bufOut  macro   buf                         ; Single argment macro to write 'nbr
         call    WriteConsoleA
         endm
 
+byte2g  macro                               ; Convert bytes in RAX to GB, rounding up (clobbers: RAX, RDX, R8).
+        xor     RDX, RDX
+        mov     R8, BytesInGB               ; R8 = 1 GB in bytes.
+        add     RAX, R8                     ; Add 1 GB to value to achieve rounding up.
+        dec     RAX                         ; Subtract 1 so integer division gives ceiling.
+        div     R8                          ; RAX = bytes / GB.
+        endm
+
+fmttime macro                               ; Convert from milliseconds to seconds (clobbers: RAX, RDX, R8).
+        xor     RDX, RDX
+        mov     R8, 1000                    ; 1 sec = 1000 ms.
+        div     R8                          ; RAX = RAX/1000.
+        endm
+
+copyStr macro   dest                        ; Copy string from [RAX] (length in R8D) into destination buffer (clobbers: RSI, RDI, RCX).
+        mov     nbrd, R8D                   ; Store length of string in 'nbrd'.
+        mov     RSI, RAX                    ; Source pointer.
+        lea     RDI, dest                   ; Destination buffer.
+        mov     ECX, R8D                    ; Number of bytes to copy.
+        rep     movsb                       ; Copy ECX bytes from [RSI] to [RDI].
+endm
+
 MEMORYSTATUSEX STRUCT
     dwLength                    dword   ?
     dwMemoryLoad                dword   ?
@@ -45,18 +69,22 @@ MEMORYSTATUSEX ENDS
 
         .data
 msEx    MEMORYSTATUSEX <>                   ; Allocate and zero-initialize an instance
-tmsg    byte    "Processor Information:", 0DH, 0AH
+tmsg    byte    "--- Processor Information ---", 0DH, 0AH
 cpuven  byte    "CPU Vendor : "
 cpunam  byte    "CPU Model  : "
 cpucor  byte    "CPU Cores  : "
-mmsg    byte    "Memory Information:", 0DH, 0AH
+mmsg    byte    "--- Memory Information ---", 0DH, 0AH
 memtot  byte    "RAM Total : "
 memfre  byte    "RAM Free  : "
+gbyte   byte    " GB"
+umsg    byte    "--- System Uptime ---", 0DH, 0AH
+secs    byte    " seconds"
 errmsg  byte    "Error", 0DH, 0AH
 newln   byte    0DH, 0AH                    ; Carriage return and line feed.
 tab     byte    09H                         ; Tab character.
-cpubuf  dword   MaxBuf DUP (?)              ; 32-bit buffer of MaxBuf size.
-membuf  qword   MaxBuf DUP (?)              ; 64-bit buffer of MaxBuf size.
+cpubuf  dword   MaxBuf DUP (?)              ; CPU strings buffer.
+membuf  dword   MaxBuf DUP (?)              ; Memory data buffer.
+tickbuf dword   MaxBuf DUP (?)              ; Formatted uptime buffer.
 stdin   qword   ?                           ; Handle to standard input device.
 stdout  qword   ?                           ; Handle to standard output device.
 nbwr    dword   ?                           ; Number of bytes (characters) actually written.
@@ -188,12 +216,8 @@ main    proc
         call    GetCpuCores
         lea     RDI, cpubuf + MaxBuf
         call    Int2Str
-        mov     nbrd, R8D
-        ; Copy result to cpubuf:
-        mov     RSI, RAX                    ; Source pointer (start of string from Int2Str).
-        lea     RDI, cpubuf                 ; Destination buffer.
-        mov     ECX, R8D                    ; Number of bytes to copy.
-        rep     movsb                       ; Copy ECX bytes from [RSI] to [RDI].
+        copyStr cpubuf                      ; Copy result in RAX to cpubuf.
+        ; Print
         strOut  cpucor
         bufOut  cpubuf
         strOut  newln
@@ -201,38 +225,47 @@ main    proc
 ;       Print memory data.
         mov     msEx.dwLength, SIZEOF MEMORYSTATUSEX
         lea     RCX, msEx
-        call    GlobalMemoryStatusEx
+        call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer).
         test    RAX, RAX                    ; 0 = failure; 1 = success
         jz      mem_fail
 
 ;       RAM total
         mov     RAX, msEx.ullTotalPhys      ; Load qword from struct.
+        byte2g                              ; Call macro to convert from bytes to GB.
         lea     RDI,    membuf + MaxBuf
         call    Int2Str
-        mov     nbrd, R8D
-        ; Copy result to membuf:
-        mov     RSI, RAX
-        lea     RDI, membuf
-        mov     ECX, R8D
-        rep     movsb
+        copyStr membuf                      ; Copy result in RAX to membuf.
+        ; Print
         strOut  newln
         strOut  mmsg
         strOut  memtot
         bufOut  membuf
+        strOut  gbyte
 
 ;       RAM available
         mov     RAX, msEx.ullAvailPhys      ; Load qword from struct.
+        byte2g
         lea     RDI,    membuf + MaxBuf
         call    Int2Str
-        mov     nbrd, R8D
-        ; Copy result to membuf:
-        mov     RSI, RAX
-        lea     RDI, membuf
-        mov     ECX, R8D
-        rep     movsb
+        copyStr membuf                      ; Copy result in RAX to membuf.
+        ; Print
         strOut  newln
         strOut  memfre
         bufOut  membuf
+        strOut  gbyte
+        strOut  newln
+
+;       Print system uptime.
+        call    GetTickCount64
+        fmttime                             ; Call macro to format milliseconds into formatted time.
+        call    Int2Str
+        copyStr tickbuf                     ; Copy result in RAX to tickbuf.
+        ; Print
+        strOut  newln
+        strOut  umsg
+        bufOut  tickbuf
+        strOut  secs
+        strOut  newln
 
 ;       Program exit.
 exit:
@@ -243,5 +276,7 @@ exit:
 mem_fail:
         strOut  errmsg
         jmp     exit
+
+;       Program end.
 main    endp
         end
