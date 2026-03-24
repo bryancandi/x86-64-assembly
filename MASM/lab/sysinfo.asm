@@ -79,7 +79,7 @@ memfre  byte    "RAM Free  : "
 gbyte   byte    " GB"
 umsg    byte    "--- System Uptime ---", 0DH, 0AH
 secs    byte    " seconds"
-errmsg  byte    "Error", 0DH, 0AH
+errmsg  byte    "Error: Unable to retrieve memory information.", 0DH, 0AH
 newln   byte    0DH, 0AH                    ; Carriage return and line feed.
 tab     byte    09H                         ; Tab character.
 cpubuf  dword   MaxBuf DUP (?)              ; CPU strings buffer.
@@ -227,8 +227,11 @@ main    proc
         lea     RCX, msEx
         call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer).
         test    RAX, RAX                    ; 0 = failure; 1 = success
-        jz      mem_fail
+        jnz     mem_success
+        strOut  errmsg                      ; Notify user memory info is unavailable.
+        jmp     mem_skip
 
+mem_success:
 ;       RAM total
         mov     RAX, msEx.ullTotalPhys      ; Load qword from struct.
         byte2g                              ; Call macro to convert from bytes to GB.
@@ -254,6 +257,7 @@ main    proc
         bufOut  membuf
         strOut  gbyte
         strOut  newln
+mem_skip:
 
 ;       Print system uptime.
         call    GetTickCount64
@@ -271,11 +275,6 @@ main    proc
 exit:
         xor     RCX, RCX
         call    ExitProcess
-
-;       GlobalMemoryStatusEx failure.
-mem_fail:
-        strOut  errmsg
-        jmp     exit
 
 ;       Program end.
 main    endp
