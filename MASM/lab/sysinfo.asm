@@ -21,18 +21,14 @@ SecPerDay         equ   86400               ; Seconds per day.
 SecPerHour        equ   3600                ; Seconds per hour.
 SecPerMinute      equ   60                  ; Seconds per minute.
 
-strOut  macro   msg                         ; Single argment macro to write a string to the console.
+strOut  macro   addr, len                   ; Two argment macro to write a string to the console.
         mov     RCX, stdout                 ; Arg 1: output device handle.
-        lea     RDX, msg                    ; Arg 2: pointer to byte array.
-        mov     R8, lengthof msg            ; Arg 3: number of bytes to write.
-        lea     R9, nbwr                    ; Arg 4: pointer to variable that receives number of bytes written.
-        call    WriteConsoleA
-        endm
-
-bufOut  macro   buf                         ; Single argment macro to write 'nbrd' bytes of a buffer to the console.
-        mov     RCX, stdout                 ; Arg 1: output device handle.
-        lea     RDX, buf                    ; Arg 2: pointer to byte array.
-        mov     R8d, [nbrd]                 ; Arg 3: number of bytes to write.
+IFIDNI  <addr>, <RAX>                       ; If addr is RAX, we move it. If it's a label, we LEA it.
+        mov     RDX, RAX                    ; Arg 2: pointer to byte array in register.
+ELSE
+        lea     RDX, addr                   ; Arg 2: pointer to byte array label.
+ENDIF
+        mov     R8D, len                    ; Arg 3: number of bytes to write.
         lea     R9, nbwr                    ; Arg 4: pointer to variable that receives number of bytes written.
         call    WriteConsoleA
         endm
@@ -85,14 +81,6 @@ timeFmt macro                               ; Convert from milliseconds to reada
 
 ;       Seconds:
         mov     [seconds], RAX
-        endm
-
-copyStr macro   dest                        ; Copy string from [RAX] (length in R8D) into destination buffer (clobbers: RSI, RDI, RCX).
-        mov     nbrd, R8D                   ; Store length of string in 'nbrd'.
-        mov     RSI, RAX                    ; Source pointer.
-        lea     RDI, dest                   ; Destination buffer.
-        mov     ECX, R8D                    ; Number of bytes to copy.
-        rep     movsb                       ; Copy ECX bytes from [RSI] to [RDI].
         endm
 
 MEMORYSTATUSEX STRUCT
@@ -172,8 +160,10 @@ GetCpuVend  proc                            ; Get CPU vendor string.
         mov     [cpubuf + 4], EDX
         mov     [cpubuf + 8], ECX
 
-        mov     byte ptr [cpubuf + 12], 0   ; Null terminate string (not needed for WriteConsoleA; remove?).
-        mov     nbrd, 12                    ; Set number of bytes to write for WriteConsoleA.
+        ;mov     byte ptr [cpubuf + 12], 0   ; Null terminate string (not needed for WriteConsoleA; remove?).
+
+        lea     RAX, cpubuf                 ; RAX: point to buffer address.
+        mov     R8D, 12                     ; Return length in R8D.
 
         pop     RBX
         ret
@@ -203,8 +193,10 @@ GetCpuBrand  proc                           ; Get CPU brand string.
         mov     [cpubuf + 40], ECX
         mov     [cpubuf + 44], EDX
 
-        mov     byte ptr [cpubuf + 48], 0
-        mov     nbrd, 48
+        ;mov     byte ptr [cpubuf + 48], 0
+
+        lea     RAX, cpubuf                 ; RAX: point to buffer address.
+        mov     R8D, 48                     ; Return length in R8D.
 
         pop     RBX
         ret
@@ -248,25 +240,24 @@ main    proc
         mov     stdout, RAX                 ; Store the handle for console output.
 
 ;       Processor section:
-        strOut  cpu_title
+        strOut  cpu_title, lengthof cpu_title
 
+        strOut  cpu_vendor, lengthof cpu_vendor
         call    GetCpuVend
-        strOut  cpu_vendor
-        bufOut  cpubuf
-        strOut  newln
+        strOut  RAX, R8D
+        strOut  newln, lengthof newln
 
+        strOut  cpu_name, lengthof cpu_name
         call    GetCpuBrand
-        strOut  cpu_name
-        bufOut  cpubuf
-        strOut  newln
+        strOut  RAX, R8D
+        strOut  newln, lengthof newln
 
+        strOut  cpu_cores, lengthof cpu_cores
         call    GetCpuCores
         lea     RDI, cpubuf + MaxBuf        ; Destination buffer + end position.
         call    Int2Str
-        copyStr cpubuf                      ; Copy result in RAX to cpubuf.
-        strOut  cpu_cores
-        bufOut  cpubuf
-        strOut  newln
+        strOut  RAX, R8D
+        strOut  newln, lengthof newln
 
 ;       Memory section:
         mov     msEx.dwLength, SIZEOF MEMORYSTATUSEX
@@ -274,15 +265,15 @@ main    proc
         call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer).
         test    RAX, RAX                    ; 0 = failure; 1 = success
         jnz     mem_success
-        strOut  mem_error                   ; Notify user memory info is unavailable.
+        strOut  mem_error, lengthof mem_error ; Notify user memory info is unavailable.
         jmp     mem_skip
 
 mem_success:
-        strOut  newln
-        strOut  mem_title
+        strOut  newln, lengthof newln
+        strOut  mem_title, lengthof mem_title
 
 ;       RAM total section
-        strOut  mem_total
+        strOut  mem_total, lengthof mem_total
         mov     RAX, msEx.ullTotalPhys      ; Load qword from struct.
         byte2Gb                             ; Call macro to convert from bytes to GiB.
 
@@ -290,21 +281,19 @@ mem_success:
         mov     RAX, [gibi_whole]           ; Move first part of size into RAX to convert to string.
         lea     RDI, membuf + MaxBuf        ; Destination buffer + end position.
         call    Int2Str
-        copyStr membuf                      ; Copy result in RAX to membuf.
-        bufOut  membuf                      ; Print whole portion of RAM size.
-        strOut  decimal_pt
+        strOut  RAX, R8D                    ; Print whole portion of RAM size.
+        strOut  decimal_pt, lengthof decimal_pt
 
         ; Fractional portion:
         mov     RAX, [gibi_fract]           ; Move second part of size into RAX to convert to string.
         lea     RDI, membuf + MaxBuf        ; Destination buffer + end position.
         call    Int2Str
-        copyStr membuf
-        bufOut  membuf
-        strOut  gib_label
-        strOut  newln
+        strOut  RAX, R8D
+        strOut  gib_label, lengthof gib_label
+        strOut  newln, lengthof newln
 
 ;       RAM available section
-        strOut  mem_free
+        strOut  mem_free, lengthof mem_free
         mov     RAX, msEx.ullAvailPhys      ; Load qword from struct.
         byte2Gb
 
@@ -312,23 +301,21 @@ mem_success:
         mov     RAX, [gibi_whole]           ; Move first part of size into RAX to convert to string.
         lea     RDI, membuf + MaxBuf        ; Destination buffer + end position.
         call    Int2Str
-        copyStr membuf                      ; Copy result in RAX to membuf.
-        bufOut  membuf                      ; Print whole portion of RAM size.
-        strOut  decimal_pt
+        strOut  RAX, R8D                    ; Print whole portion of RAM size.
+        strOut  decimal_pt, lengthof decimal_pt
 
         ; Fractional portion:
         mov     RAX, [gibi_fract]           ; Move second part of size into RAX to convert to string.
         lea     RDI, membuf + MaxBuf        ; Destination buffer + end position.
         call    Int2Str
-        copyStr membuf
-        bufOut  membuf
-        strOut  gib_label
-        strOut  newln
+        strOut  RAX, R8D
+        strOut  gib_label, lengthof gib_label
+        strOut  newln, lengthof newln
 mem_skip:
 
 ;       Uptime section:
-        strOut  newln
-        strOut  uptime_title
+        strOut  newln, lengthof newln
+        strOut  uptime_title, lengthof uptime_title
 
         call    GetTickCount64              ; RAX = uptime in milliseconds.
         timeFmt                             ; Convert milliseconds and store in 'days', 'hours', 'minutes', 'seconds'.
@@ -336,31 +323,27 @@ mem_skip:
         mov     RAX, [days]
         lea     RDI, timebuf + MaxBuf       ; Destination buffer + end position.
         call    Int2Str
-        copyStr timebuf                     ; Copy result in RAX to timebuf.
-        bufOut  timebuf
-        strOut  days_label
+        strOut  RAX, R8D
+        strOut  days_label, lengthof days_label
 
         mov     RAX, [hours]
         lea     RDI, timebuf + MaxBuf
         call    Int2Str
-        copyStr timebuf
-        bufOut  timebuf
-        strOut  hours_label
+        strOut  RAX, R8D
+        strOut  hours_label, lengthof hours_label
 
         mov     RAX, [minutes]
         lea     RDI, timebuf + MaxBuf
         call    Int2Str
-        copyStr timebuf
-        bufOut  timebuf
-        strOut  minutes_label
+        strOut  RAX, R8D
+        strOut  minutes_label, lengthof minutes_label
 
         mov     RAX, [seconds]
         lea     RDI, timebuf + MaxBuf
         call    Int2Str
-        copyStr timebuf
-        bufOut  timebuf
-        strOut  seconds_label
-        strOut  newln
+        strOut  RAX, R8D
+        strOut  seconds_label, lengthof seconds_label
+        strOut  newln, lengthof newln
 
 ;       Program exit.
 exit:
