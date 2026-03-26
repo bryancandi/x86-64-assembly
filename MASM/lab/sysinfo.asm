@@ -33,56 +33,6 @@ ENDIF
         call    WriteConsoleA
         endm
 
-byte2Gb macro                               ; Convert bytes in RAX to GiB whole/fractional portions (clobbers: RAX, RDX, R8).
-        LOCAL trim_loop, skip_loop          ; Declare labels as local for macro.
-        xor     RDX, RDX
-        mov     R8, BytesPerGib             ; R8 = 1 GiB in bytes.
-        div     R8                          ; RAX = RAX/R8, RDX = remainder.
-
-        ; RAX = whole portion of result, RDX = fractional portion of result.
-        mov     [gibi_whole], RAX           ; Store whole portion.
-
-        ; Scale remainder to 2 decimal digits: (remainder * 100) / GiB
-        mov     RAX, RDX                    ; Move remainder into RAX.
-        mov     R8, 100
-        mul     R8                          ; Multiply by 100 to convert fractional GiB into a 2-digit integer (shift decimal right).
-        mov     R8, BytesPerGib
-        div     R8                          ; (remainder * 100) / GiB
-        mov     [gibi_fract], RAX           ; Store fractional portion.
-        endm
-
-timeFmt macro                               ; Convert from milliseconds to readable values (clobbers: RAX, RDX, R8).
-        ; RAX contains uptime in milliseconds at call time.
-        xor     RDX, RDX                    ; Clear RDX for division.
-        mov     R8, MsPerSecond             ; Divisor in R8 = milliseconds per second.
-        div     R8                          ; RAX = seconds.
-
-        ; Seconds can now be converted to Days, Hours, Minutes.
-;       Days:
-        xor     RDX, RDX
-        mov     R8, SecPerDay
-        div     R8                          ; RAX = days, RDX = remaining seconds.
-        mov     [days], RAX                 ; Store result.
-        mov     RAX, RDX                    ; Carry remainder forward.
-
-;       Hours:
-        xor     RDX, RDX
-        mov     R8, SecPerHour
-        div     R8
-        mov     [hours], RAX
-        mov     RAX, RDX
-
-;       Minutes
-        xor     RDX, RDX
-        mov     R8, SecPerMinute
-        div     R8
-        mov     [minutes], RAX
-        mov     RAX, RDX
-
-;       Seconds:
-        mov     [seconds], RAX
-        endm
-
 MEMORYSTATUSEX STRUCT
     dwLength                    dword   ?
     dwMemoryLoad                dword   ?
@@ -150,6 +100,60 @@ convert_loop:
         pop     RBX                         ; Restore RBX.
         ret
 Int2Str  endp
+
+Byte2GiB  proc
+        ; RAX = bytes
+        xor     RDX, RDX
+        mov     R8, BytesPerGib             ; R8 = 1 GiB in bytes.
+        div     R8                          ; RAX = RAX/R8, RDX = remainder.
+
+        ; RAX = whole portion of result, RDX = fractional portion of result.
+        mov     [gibi_whole], RAX           ; Store whole portion.
+
+        ; Scale remainder to 2 decimal digits: (remainder * 100) / GiB
+        mov     RAX, RDX                    ; Move remainder into RAX.
+        mov     R8, 100
+        mul     R8                          ; Multiply by 100 to convert fractional GiB into a 2-digit integer (shift decimal right).
+        mov     R8, BytesPerGib
+        div     R8                          ; (remainder * 100) / GiB
+        mov     [gibi_fract], RAX           ; Store fractional portion.
+
+        ret
+Byte2GiB  endp
+
+FormatTime  proc
+        ; RAX = uptime milliseconds
+        xor     RDX, RDX                    ; Clear RDX for division.
+        mov     R8, MsPerSecond             ; Divisor in R8 = milliseconds per second.
+        div     R8                          ; RAX = seconds.
+
+        ; Seconds can now be converted to Days, Hours, Minutes.
+;       Days:
+        xor     RDX, RDX
+        mov     R8, SecPerDay
+        div     R8                          ; RAX = days, RDX = remaining seconds.
+        mov     [days], RAX                 ; Store result.
+        mov     RAX, RDX                    ; Carry remainder forward.
+
+;       Hours:
+        xor     RDX, RDX
+        mov     R8, SecPerHour
+        div     R8
+        mov     [hours], RAX
+        mov     RAX, RDX
+
+;       Minutes
+        xor     RDX, RDX
+        mov     R8, SecPerMinute
+        div     R8
+        mov     [minutes], RAX
+        mov     RAX, RDX
+
+;       Seconds:
+        mov     [seconds], RAX
+
+        ret
+FormatTime  endp
 
 GetCpuVend  proc                            ; Get CPU vendor string.
         push    RBX
@@ -275,7 +279,7 @@ mem_success:
 ;       RAM total section
         strOut  mem_total, lengthof mem_total
         mov     RAX, msEx.ullTotalPhys      ; Load qword from struct.
-        byte2Gb                             ; Call macro to convert from bytes to GiB.
+        call    Byte2GiB                    ; Convert bytes to GiB.
 
         ; Whole portion:
         mov     RAX, [gibi_whole]           ; Move first part of size into RAX to convert to string.
@@ -295,7 +299,7 @@ mem_success:
 ;       RAM available section
         strOut  mem_free, lengthof mem_free
         mov     RAX, msEx.ullAvailPhys      ; Load qword from struct.
-        byte2Gb
+        call    Byte2GiB
 
         ; Whole portion:
         mov     RAX, [gibi_whole]           ; Move first part of size into RAX to convert to string.
@@ -318,7 +322,7 @@ mem_skip:
         strOut  uptime_title, lengthof uptime_title
 
         call    GetTickCount64              ; RAX = uptime in milliseconds.
-        timeFmt                             ; Convert milliseconds and store in 'days', 'hours', 'minutes', 'seconds'.
+        call    FormatTime                  ; Convert milliseconds and store in 'days', 'hours', 'minutes', 'seconds'.
 
         mov     RAX, [days]
         lea     RDI, timebuf + MaxBuf       ; Destination buffer + end position.
