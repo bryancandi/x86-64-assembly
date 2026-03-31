@@ -1,17 +1,21 @@
 ;-------------------------------------------------------------------------
-; x64 System Information program for Windows console.
+; x64 System Information utility for Windows console.
+; Author: Bryan C.
+; Date: 2026
 ;
 ; Assemble with MASM and link:
-; ml64.exe echo.asm /link /SUBSYSTEM:console /ENTRY:main
+; ml64.exe sysinfo.asm /link /SUBSYSTEM:console /ENTRY:main
 ;-------------------------------------------------------------------------
 
-includelib kernel32.lib                     ; Import Kernel32 library (Windows API).
+includelib kernel32.lib                     ; Win32 API functions.
+includelib ntdll.lib                        ; NT native system calls.
 
 ExitProcess             proto               ; Terminate the current process.
 GetStdHandle            proto               ; Retrieve a handle to a standard device (input/output).
 WriteConsoleA           proto               ; Write a buffer of characters to the console.
 GlobalMemoryStatusEx    proto               ; Retrieve information about the system's memory usage.
 GetTickCount64          proto               ; Returns 64-bit tick count in RAX.
+RtlGetVersion           proto               ; Returns version information about the currently running operating system.
 
 STD_OUTPUT_HANDLE equ   -11                 ; Device code for console output.
 MaxBuf            equ   100                 ; Maximum buffer size.
@@ -21,7 +25,8 @@ SecPerDay         equ   86400               ; Seconds per day.
 SecPerHour        equ   3600                ; Seconds per hour.
 SecPerMinute      equ   60                  ; Seconds per minute.
 
-strOut  macro   addr, len                   ; Two argment macro to write a string to the console.
+; Write a string to the console. addr may be RAX or a label; len is copied into R8D.
+strOut  macro   addr, len
         mov     RCX, stdout                 ; Arg 1: output device handle.
 IFIDNI  <addr>, <RAX>                       ; If addr is RAX, we move it. If it's a label, we LEA it.
         mov     RDX, RAX                    ; Arg 2: pointer to byte array in register.
@@ -33,6 +38,47 @@ ENDIF
         call    WriteConsoleA
         endm
 
+; Print the Windows 11 version string for the given build number.
+verOut  macro  reg
+    LOCAL Win11_26H1, Win11_25H2, Win11_24H2
+    LOCAL Win11_23H2, Win11_22H2, Win11_21H2
+    LOCAL done
+
+        cmp     reg, 28000
+        jae     Win11_26H1
+        cmp     reg, 26200
+        jae     Win11_25H2
+        cmp     reg, 26100
+        jae     Win11_24H2
+        cmp     reg, 22631
+        jae     Win11_23H2
+        cmp     reg, 22621
+        jae     Win11_22H2
+        cmp     reg, 22000
+        jae     Win11_21H2
+
+Win11_26H1:
+        strOut  W11_26H1, lengthof W11_26H1
+        jmp     done
+Win11_25H2:
+        strOut  W11_25H2, lengthof W11_25H2
+        jmp     done
+Win11_24H2:
+        strOut  W11_24H2, lengthof W11_24H2
+        jmp     done
+Win11_23H2:
+        strOut  W11_23H2, lengthof W11_23H2
+        jmp     done
+Win11_22H2:
+        strOut  W11_22H2, lengthof W11_22H2
+        jmp     done
+Win11_21H2:
+        strOut  W11_21H2, lengthof W11_21H2
+        jmp     done
+done:
+        endm
+
+; Structure used by GlobalMemoryStatusEx that contains both physical and virtual memory state.
 MEMORYSTATUSEX STRUCT
     dwLength                    dword   ?
     dwMemoryLoad                dword   ?
@@ -45,18 +91,39 @@ MEMORYSTATUSEX STRUCT
     ullAvailExtendedVirtual     qword   ?
 MEMORYSTATUSEX ENDS
 
+; Structure used by RtlGetVersion that contains operating system version information.
+RTL_OSVERSIONINFOW STRUCT
+    dwOSVersionInfoSize         dword   ?
+    dwMajorVersion              dword   ?
+    dwMinorVersion              dword   ?
+    dwBuildNumber               dword   ?
+    dwPlatformId                dword   ?
+    szCSDVersion                word    128 DUP(?)
+RTL_OSVERSIONINFOW ENDS
+
         .data
-msEx            MEMORYSTATUSEX <>           ; Allocate and zero-initialize an instance
+msEx            MEMORYSTATUSEX <>           ; Allocate and zero-initialize an instance of struct MEMORYSTATUSEX.
+rtlVer          RTL_OSVERSIONINFOW <>       ; Same for RTL_OSVERSIONINFOW.
+osbuf           dword   MaxBuf DUP (?)      ; OS version string buffer.
 cpubuf          dword   MaxBuf DUP (?)      ; CPU strings buffer.
 membuf          dword   MaxBuf DUP (?)      ; Memory data buffer.
 timebuf         dword   MaxBuf DUP (?)      ; Uptime buffer.
 newln           byte    0DH, 0AH            ; Carriage return and line feed.
 tab             byte    09H                 ; Tab character.
-cpu_title       byte    "--- Processor Information ---", 0DH, 0AH
-cpu_vendor      byte    "CPU Vendor : "
-cpu_name        byte    "CPU Model  : "
-cpu_cores       byte    "CPU Cores  : "
-mem_title       byte    "--- Memory Information ---", 0DH, 0AH
+os_title        byte    "--- Operating System ---", 0DH, 0AH
+os_version      byte    "Version : "
+os_build        byte    "Build   : "
+W11_26H1        byte    "Windows 11 26H1 "
+W11_25H2        byte    "Windows 11 25H2 "
+W11_24H2        byte    "Windows 11 24H2 "
+W11_23H2        byte    "Windows 11 23H2 "
+W11_22H2        byte    "Windows 11 22H2 "
+W11_21H2        byte    "Windows 11 21H2 "
+cpu_title       byte    "--- Processor ---", 0DH, 0AH
+cpu_vendor      byte    "Vendor : "
+cpu_name        byte    "Model  : "
+cpu_cores       byte    "Cores  : "
+mem_title       byte    "--- Memory ---", 0DH, 0AH
 mem_total       byte    "RAM Total : "
 mem_free        byte    "RAM Free  : "
 mem_error       byte    "Error: Unable to retrieve memory information.", 0DH, 0AH
@@ -79,7 +146,8 @@ nbwr            dword   ?                   ; Number of bytes (characters) actua
 nbrd            dword   ?                   ; Number of bytes (characters) actually read.
 
         .code
-Int2Str  proc                               ; Convert integer in RAX to ASCII string in buffer pointed to by RDI. Digits are stored in reverse order.
+; Convert integer in RAX to ASCII string in buffer pointed to by RDI; digits are stored in reverse order.
+Int2Str  proc
         push    RBX                         ; Preserve RBX register.
 
         mov     RBX, 10                     ; Divisor (10).
@@ -101,6 +169,7 @@ convert_loop:
         ret
 Int2Str  endp
 
+; Convert bytes in RAX to GiB; store whole and fractional parts in gibi_whole and gibi_fract.
 Byte2GiB  proc
         ; RAX = bytes
         xor     RDX, RDX
@@ -121,41 +190,43 @@ Byte2GiB  proc
         ret
 Byte2GiB  endp
 
+; Convert milliseconds in RAX to a human-readable format.
 FormatTime  proc
         ; RAX = uptime milliseconds
         xor     RDX, RDX                    ; Clear RDX for division.
         mov     R8, MsPerSecond             ; Divisor in R8 = milliseconds per second.
         div     R8                          ; RAX = seconds.
 
-        ; Seconds can now be converted to Days, Hours, Minutes.
-;       Days:
+        ; Seconds can now be divided out into Days, Hours, Minutes.
+        ; Days:
         xor     RDX, RDX
         mov     R8, SecPerDay
         div     R8                          ; RAX = days, RDX = remaining seconds.
         mov     [days], RAX                 ; Store result.
         mov     RAX, RDX                    ; Carry remainder forward.
 
-;       Hours:
+        ; Hours:
         xor     RDX, RDX
         mov     R8, SecPerHour
         div     R8
         mov     [hours], RAX
         mov     RAX, RDX
 
-;       Minutes
+        ; Minutes
         xor     RDX, RDX
         mov     R8, SecPerMinute
         div     R8
         mov     [minutes], RAX
         mov     RAX, RDX
 
-;       Seconds:
+        ; Seconds:
         mov     [seconds], RAX
 
         ret
 FormatTime  endp
 
-GetCpuVend  proc                            ; Get CPU vendor string.
+; Get CPU vendor string and store it in a buffer.
+GetCpuVend  proc
         push    RBX
 
         mov     EAX, 0                      ; CPUID leaf 0 = vendor.
@@ -164,7 +235,7 @@ GetCpuVend  proc                            ; Get CPU vendor string.
         mov     [cpubuf + 4], EDX
         mov     [cpubuf + 8], ECX
 
-        ;mov     byte ptr [cpubuf + 12], 0   ; Null terminate string (not needed for WriteConsoleA; remove?).
+        ;mov     byte ptr [cpubuf + 12], 0   ; Null terminate string (not required by WriteConsoleA; remove?).
 
         lea     RAX, cpubuf                 ; RAX: point to buffer address.
         mov     R8D, 12                     ; Return length in R8D.
@@ -173,7 +244,8 @@ GetCpuVend  proc                            ; Get CPU vendor string.
         ret
 GetCpuVend  endp
 
-GetCpuBrand  proc                           ; Get CPU brand string.
+; Get CPU brand string and store it in a buffer.
+GetCpuBrand  proc
         push    RBX
 
         mov     EAX, 80000002h              ; 80000002h - 80000004h = processor brand string.
@@ -206,7 +278,8 @@ GetCpuBrand  proc                           ; Get CPU brand string.
         ret
 GetCpuBrand  endp
 
-GetCpuCores  proc                           ; Return CPU core count as integer in EAX.
+; Return CPU core count as an integer in EAX.
+GetCpuCores  proc
         push    RBX
 
         mov     EAX, 0                      ; Load vendor string.
@@ -214,7 +287,7 @@ GetCpuCores  proc                           ; Return CPU core count as integer i
         cmp     EBX, 'Auth'                 ; Check for the first part of "AuthenticAMD" in vendor string.
         je      amd_proc
 
-;       Intel processor
+        ; Intel processor
         mov     EAX, 4
         xor     ECX, ECX                    ; Sub-leaf: 0
         cpuid
@@ -222,7 +295,7 @@ GetCpuCores  proc                           ; Return CPU core count as integer i
         inc     EAX                         ; Core count in EAX.
         jmp     done
 
-;       AMD Processor
+        ; AMD Processor
 amd_proc:
         mov     EAX, 80000008h
         cpuid
@@ -238,12 +311,35 @@ GetCpuCores  endp
 main    proc
         sub     RSP, 40                     ; Reserve "shadow space" on stack for 4 args (32 shadow + 8 alignment).
 
-;       Obtain handle for standard output (console).
+        ; Obtain handle for standard output.
         mov     RCX, STD_OUTPUT_HANDLE      ; Standard output device code for GetStdHandle.
         call    GetStdHandle                ; Return handle to standard output.
         mov     stdout, RAX                 ; Store the handle for console output.
 
+;       Operating system section:
+        strOut  newln, lengthof newln
+        strOut  os_title, lengthof os_title
+
+        mov     rtlVer.dwOSVersionInfoSize, SIZEOF RTL_OSVERSIONINFOW
+        lea     RCX, rtlVer
+        call    RtlGetVersion
+
+        ; Version string:
+        strOut  os_version, lengthof os_version
+        mov     EAX, rtlVer.dwBuildNumber
+        verOut  EAX
+        strOut  newln, lengthof newln
+
+        ; Build number:
+        strOut  os_build, lengthof os_build
+        mov     EAX, rtlVer.dwBuildNumber
+        lea     RDI, osbuf + MaxBuf         ; Destination buffer + end position.
+        call    Int2Str
+        strOut  RAX, R8D
+        strOut  newln, lengthof newln
+
 ;       Processor section:
+        strOut  newln, lengthof newln
         strOut  cpu_title, lengthof cpu_title
 
         strOut  cpu_vendor, lengthof cpu_vendor
@@ -276,7 +372,7 @@ mem_success:
         strOut  newln, lengthof newln
         strOut  mem_title, lengthof mem_title
 
-;       RAM total section
+        ; RAM total
         strOut  mem_total, lengthof mem_total
         mov     RAX, msEx.ullTotalPhys      ; Load qword from struct.
         call    Byte2GiB                    ; Convert bytes to GiB.
@@ -296,7 +392,7 @@ mem_success:
         strOut  gib_label, lengthof gib_label
         strOut  newln, lengthof newln
 
-;       RAM available section
+        ; RAM available
         strOut  mem_free, lengthof mem_free
         mov     RAX, msEx.ullAvailPhys      ; Load qword from struct.
         call    Byte2GiB
@@ -348,12 +444,10 @@ mem_skip:
         strOut  RAX, R8D
         strOut  seconds_label, lengthof seconds_label
         strOut  newln, lengthof newln
+        strOut  newln, lengthof newln
 
-;       Program exit.
 exit:
         xor     RCX, RCX
         call    ExitProcess
-
-;       Main procedure and program end.
 main    endp
         end
