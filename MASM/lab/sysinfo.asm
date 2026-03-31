@@ -14,17 +14,17 @@ ExitProcess             proto               ; Terminate the current process.
 GetStdHandle            proto               ; Retrieve a handle to a standard device (input/output).
 WriteConsoleA           proto               ; Write a buffer of characters to the console.
 GlobalMemoryStatusEx    proto               ; Retrieve information about the system's memory usage.
-GetTickCount64          proto               ; Returns 64-bit tick count in RAX.
-RtlGetVersion           proto               ; Returns version information about the currently running operating system.
-GetProductInfo          proto :dword, :dword, :dword, :dword, :ptr dword
+GetTickCount64          proto               ; Return 64-bit tick count in RAX.
+RtlGetVersion           proto               ; Return version information about the currently running operating system.
+GetProductInfo          proto :dword, :dword, :dword, :dword, :ptr dword ; Return product edition.
 
 STD_OUTPUT_HANDLE equ   -11                 ; Device code for console output.
-MaxBuf            equ   100                 ; Maximum buffer size.
-BytesPerGib       equ   1024 * 1024 * 1024  ; Bytes per Gibibyte.
-MsPerSecond       equ   1000                ; Milliseconds per second.
-SecPerDay         equ   86400               ; Seconds per day.
-SecPerHour        equ   3600                ; Seconds per hour.
-SecPerMinute      equ   60                  ; Seconds per minute.
+MaxBuf            equ   100
+BytesPerGib       equ   1024 * 1024 * 1024
+MsPerSecond       equ   1000
+SecPerDay         equ   86400
+SecPerHour        equ   3600
+SecPerMinute      equ   60
 
 ; Write a string to the console. addr may be RAX or a label; len is copied into R8D.
 strOut  macro   addr, len
@@ -40,10 +40,8 @@ ENDIF
         endm
 
 ; Print the Windows 11 version string for the given build number.
-verOut  macro  reg
-    LOCAL Win11_26H1, Win11_25H2, Win11_24H2
-    LOCAL Win11_23H2, Win11_22H2, Win11_21H2
-    LOCAL done
+verOut  macro   reg
+    LOCAL Win11_26H1, Win11_25H2, Win11_24H2, Win11_23H2, Win11_22H2, Win11_21H2, done
 
         cmp     reg, 28000
         jae     Win11_26H1
@@ -69,6 +67,61 @@ Win11_23H2: strOut W11_23H2, lengthof W11_23H2
 Win11_22H2: strOut W11_22H2, lengthof W11_22H2
         jmp     done
 Win11_21H2: strOut W11_21H2, lengthof W11_21H2
+        jmp     done
+done:
+        endm
+
+; Compare the value returned by GetProductInfo; store current Windows edition in edbuf.
+getEdi  macro   reg
+    LOCAL home, home_sl, home_n, pro, pro_n, pro_edu, pro_ws, edu, ent, ent_n, done
+
+        cmp     reg, 00000065H
+        je      home
+        cmp     reg, 00000064H
+        je      home_sl
+        cmp     reg, 00000062H
+        je      home_n
+        cmp     reg, 00000030H
+        je      pro
+        cmp     reg, 00000031H
+        je      pro_n
+        cmp     reg, 000000A4H
+        je      pro_edu
+        cmp     reg, 000000A1H
+        je      pro_ws
+        cmp     reg, 00000079H
+        je      edu
+        cmp     reg, 00000004H
+        je      ent
+        cmp     reg, 0000001BH
+        je      ent_n
+
+; Write edition label into edbuf via little-endian DWORD literals:
+home:   mov     [edbuf], 'emoH'
+        jmp     done
+home_sl:mov     [edbuf], 'emoH'
+        mov     [edbuf + 4], 'LS '
+        jmp     done
+home_n: mov     [edbuf], 'emoH'
+        mov     [edbuf + 4], 'N '
+        jmp     done
+pro:    mov     [edbuf], 'orP'
+        jmp     done
+pro_n:  mov     [edbuf], 'orP'
+        mov     [edbuf + 4], 'N '
+        jmp     done
+pro_edu:mov     [edbuf], 'orP'
+        mov     [edbuf + 4], 'udE '
+        jmp     done
+pro_ws: mov     [edbuf], 'orP'
+        mov     [edbuf + 4], 'SW '
+        jmp     done
+edu:    mov     [edbuf], 'edE'
+        jmp     done
+ent:    mov     [edbuf], 'tnE'
+        jmp     done
+ent_n:  mov     [edbuf], 'tnE'
+        mov     [edbuf + 4], 'N '
         jmp     done
 done:
         endm
@@ -102,25 +155,24 @@ RTL_OSVERSIONINFOEXW STRUCT
 RTL_OSVERSIONINFOEXW ENDS
 
         .data
-msEx            MEMORYSTATUSEX <>           ; Allocate and zero-initialize an instance of struct MEMORYSTATUSEX.
-osEx            RTL_OSVERSIONINFOEXW <>       ; Same for RTL_OSVERSIONINFOW.
+msEx            MEMORYSTATUSEX <>           ; Allocate and zero-initialize struct.
+osEx            RTL_OSVERSIONINFOEXW <>
 osbuf           dword   MaxBuf DUP (?)      ; OS version buffer.
 edbuf           dword   MaxBuf DUP (?)      ; OS edition buffer.
 cpubuf          dword   MaxBuf DUP (?)      ; CPU strings buffer.
 membuf          dword   MaxBuf DUP (?)      ; Memory data buffer.
 timebuf         dword   MaxBuf DUP (?)      ; Uptime buffer.
-newln           byte    0DH, 0AH            ; Carriage return and line feed.
-tab             byte    09H                 ; Tab character.
+newln           byte    0DH, 0AH            ; CRLF
 os_title        byte    "--- Operating System ---", 0DH, 0AH
 os_version      byte    "Version : "
 os_build        byte    "Build   : "
 os_error        byte    "Error: Unable to retrieve OS version information.", 0DH, 0AH
-W11_26H1        byte    "Windows 11 26H1 "
-W11_25H2        byte    "Windows 11 25H2 "
-W11_24H2        byte    "Windows 11 24H2 "
-W11_23H2        byte    "Windows 11 23H2 "
-W11_22H2        byte    "Windows 11 22H2 "
-W11_21H2        byte    "Windows 11 21H2 "
+W11_26H1        byte    "Windows 11 (26H1) "
+W11_25H2        byte    "Windows 11 (25H2) "
+W11_24H2        byte    "Windows 11 (24H2) "
+W11_23H2        byte    "Windows 11 (23H2) "
+W11_22H2        byte    "Windows 11 (22H2) "
+W11_21H2        byte    "Windows 11 (21H2) "
 productType     dword   ?                   ; Store return value from GetProductInfo function.
 cpu_title       byte    "--- Processor ---", 0DH, 0AH
 cpu_vendor      byte    "Vendor : "
@@ -337,22 +389,12 @@ rtl_success:
         mov     EDX, osEx.dwMinorVersion
         movzx   R8D, osEx.wServicePackMajor ; Copy WORD to EAX; zero-extend to 32-bit DWORD.
         movzx   R9D, osEx.wServicePackMinor
-
         lea     RAX, productType
         mov     [RSP + 32], RAX             ; Shadow space + 5th arg.
         call    GetProductInfo
 
         mov     EAX, [productType]
-
-; TODO: Create a macro for this comparison; add other values besides "Pro" edition.
-        cmp     EAX, 00000030H
-        je      pro_ed
-        jmp     skip
-
-pro_ed:
-        mov     [edbuf], "orP"              ; Store little-endian "Pro" in buffer.
-        jmp     skip
-skip:
+        getEdi  EAX
 
         ; Version string:
         strOut  os_version, lengthof os_version
