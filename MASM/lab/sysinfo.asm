@@ -28,7 +28,7 @@ SecPerMinute      equ   60                  ; Seconds per minute.
 ; Write a string to the console. addr may be RAX or a label; len is copied into R8D.
 strOut  macro   addr, len
         mov     RCX, stdout                 ; Arg 1: output device handle.
-IFIDNI  <addr>, <RAX>                       ; If addr is RAX, we move it. If it's a label, we LEA it.
+IFIDNI  <addr>, <RAX>                       ; If addr is RAX, use it directly; otherwise LEA of the label.
         mov     RDX, RAX                    ; Arg 2: pointer to byte array in register.
 ELSE
         lea     RDX, addr                   ; Arg 2: pointer to byte array label.
@@ -57,28 +57,22 @@ verOut  macro  reg
         cmp     reg, 22000
         jae     Win11_21H2
 
-Win11_26H1:
-        strOut  W11_26H1, lengthof W11_26H1
+Win11_26H1: strOut W11_26H1, lengthof W11_26H1
         jmp     done
-Win11_25H2:
-        strOut  W11_25H2, lengthof W11_25H2
+Win11_25H2: strOut W11_25H2, lengthof W11_25H2
         jmp     done
-Win11_24H2:
-        strOut  W11_24H2, lengthof W11_24H2
+Win11_24H2: strOut W11_24H2, lengthof W11_24H2
         jmp     done
-Win11_23H2:
-        strOut  W11_23H2, lengthof W11_23H2
+Win11_23H2: strOut W11_23H2, lengthof W11_23H2
         jmp     done
-Win11_22H2:
-        strOut  W11_22H2, lengthof W11_22H2
+Win11_22H2: strOut W11_22H2, lengthof W11_22H2
         jmp     done
-Win11_21H2:
-        strOut  W11_21H2, lengthof W11_21H2
+Win11_21H2: strOut W11_21H2, lengthof W11_21H2
         jmp     done
 done:
         endm
 
-; Structure used by GlobalMemoryStatusEx that contains both physical and virtual memory state.
+; Structure used by GlobalMemoryStatusEx; contains both physical and virtual memory state.
 MEMORYSTATUSEX STRUCT
     dwLength                    dword   ?
     dwMemoryLoad                dword   ?
@@ -91,7 +85,7 @@ MEMORYSTATUSEX STRUCT
     ullAvailExtendedVirtual     qword   ?
 MEMORYSTATUSEX ENDS
 
-; Structure used by RtlGetVersion that contains operating system version information.
+; Structure used by RtlGetVersion; contains operating system version information.
 RTL_OSVERSIONINFOW STRUCT
     dwOSVersionInfoSize         dword   ?
     dwMajorVersion              dword   ?
@@ -151,7 +145,7 @@ nbrd            dword   ?                   ; Number of bytes (characters) actua
 Int2Str  proc
         push    RBX                         ; Preserve RBX register.
 
-        mov     RBX, 10                     ; Divisor (10).
+        mov     RBX, 10                     ; Divisor (10)
         xor     R8D, R8D                    ; Initial string length = 0
 
 convert_loop:
