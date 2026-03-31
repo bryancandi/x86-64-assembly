@@ -485,6 +485,8 @@ mem_success:
         strOut  RAX, R8D
         strOut  gib_label, lengthof gib_label
         strOut  newln, lengthof newln
+
+; TODO: add virtual memory output.
 mem_fail:
 
 ;       Uptime section:
