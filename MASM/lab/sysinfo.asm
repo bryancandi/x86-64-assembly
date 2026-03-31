@@ -103,7 +103,7 @@ RTL_OSVERSIONINFOW ENDS
 
         .data
 msEx            MEMORYSTATUSEX <>           ; Allocate and zero-initialize an instance of struct MEMORYSTATUSEX.
-rtlVer          RTL_OSVERSIONINFOW <>       ; Same for RTL_OSVERSIONINFOW.
+osVer           RTL_OSVERSIONINFOW <>       ; Same for RTL_OSVERSIONINFOW.
 osbuf           dword   MaxBuf DUP (?)      ; OS version string buffer.
 cpubuf          dword   MaxBuf DUP (?)      ; CPU strings buffer.
 membuf          dword   MaxBuf DUP (?)      ; Memory data buffer.
@@ -113,6 +113,7 @@ tab             byte    09H                 ; Tab character.
 os_title        byte    "--- Operating System ---", 0DH, 0AH
 os_version      byte    "Version : "
 os_build        byte    "Build   : "
+os_error        byte    "Error: Unable to retrieve OS version information.", 0DH, 0AH
 W11_26H1        byte    "Windows 11 26H1 "
 W11_25H2        byte    "Windows 11 25H2 "
 W11_24H2        byte    "Windows 11 24H2 "
@@ -320,19 +321,24 @@ main    proc
         strOut  newln, lengthof newln
         strOut  os_title, lengthof os_title
 
-        mov     rtlVer.dwOSVersionInfoSize, SIZEOF RTL_OSVERSIONINFOW
-        lea     RCX, rtlVer
+        mov     osVer.dwOSVersionInfoSize, SIZEOF RTL_OSVERSIONINFOW
+        lea     RCX, osVer
         call    RtlGetVersion
+        test    EAX, EAX                    ; 0 = success; nz = failure
+        jz      rtl_success
+        strOut  os_error, lengthof os_error
+        jmp     rtl_fail
 
+rtl_success:
         ; Version string:
         strOut  os_version, lengthof os_version
-        mov     EAX, rtlVer.dwBuildNumber
+        mov     EAX, osVer.dwBuildNumber
         verOut  EAX
         strOut  newln, lengthof newln
 
         ; Build number:
         strOut  os_build, lengthof os_build
-        mov     EAX, rtlVer.dwBuildNumber
+        mov     EAX, osVer.dwBuildNumber
         lea     RDI, osbuf + MaxBuf         ; Destination buffer + end position.
         call    Int2Str
         strOut  RAX, R8D
@@ -354,24 +360,25 @@ main    proc
 
         strOut  cpu_cores, lengthof cpu_cores
         call    GetCpuCores
-        lea     RDI, cpubuf + MaxBuf        ; Destination buffer + end position.
+        lea     RDI, cpubuf + MaxBuf
         call    Int2Str
         strOut  RAX, R8D
         strOut  newln, lengthof newln
+rtl_fail:
 
 ;       Memory section:
-        mov     msEx.dwLength, SIZEOF MEMORYSTATUSEX
-        lea     RCX, msEx
-        call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer).
-        test    RAX, RAX                    ; 0 = failure; 1 = success
-        jnz     mem_success
-        strOut  mem_error, lengthof mem_error ; Notify user memory info is unavailable.
-        jmp     mem_skip
-
-mem_success:
         strOut  newln, lengthof newln
         strOut  mem_title, lengthof mem_title
 
+        mov     msEx.dwLength, SIZEOF MEMORYSTATUSEX
+        lea     RCX, msEx
+        call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer).
+        test    RAX, RAX                    ; 1 = success; 0 = failure
+        jnz     mem_success
+        strOut  mem_error, lengthof mem_error
+        jmp     mem_fail
+
+mem_success:
         ; RAM total
         strOut  mem_total, lengthof mem_total
         mov     RAX, msEx.ullTotalPhys      ; Load qword from struct.
@@ -386,7 +393,7 @@ mem_success:
 
         ; Fractional portion:
         mov     RAX, [gibi_fract]           ; Move second part of size into RAX to convert to string.
-        lea     RDI, membuf + MaxBuf        ; Destination buffer + end position.
+        lea     RDI, membuf + MaxBuf
         call    Int2Str
         strOut  RAX, R8D
         strOut  gib_label, lengthof gib_label
@@ -399,19 +406,19 @@ mem_success:
 
         ; Whole portion:
         mov     RAX, [gibi_whole]           ; Move first part of size into RAX to convert to string.
-        lea     RDI, membuf + MaxBuf        ; Destination buffer + end position.
+        lea     RDI, membuf + MaxBuf
         call    Int2Str
         strOut  RAX, R8D                    ; Print whole portion of RAM size.
         strOut  decimal_pt, lengthof decimal_pt
 
         ; Fractional portion:
         mov     RAX, [gibi_fract]           ; Move second part of size into RAX to convert to string.
-        lea     RDI, membuf + MaxBuf        ; Destination buffer + end position.
+        lea     RDI, membuf + MaxBuf
         call    Int2Str
         strOut  RAX, R8D
         strOut  gib_label, lengthof gib_label
         strOut  newln, lengthof newln
-mem_skip:
+mem_fail:
 
 ;       Uptime section:
         strOut  newln, lengthof newln
@@ -421,7 +428,7 @@ mem_skip:
         call    FormatTime                  ; Convert milliseconds and store in 'days', 'hours', 'minutes', 'seconds'.
 
         mov     RAX, [days]
-        lea     RDI, timebuf + MaxBuf       ; Destination buffer + end position.
+        lea     RDI, timebuf + MaxBuf
         call    Int2Str
         strOut  RAX, R8D
         strOut  days_label, lengthof days_label
