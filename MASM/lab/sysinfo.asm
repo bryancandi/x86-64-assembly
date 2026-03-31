@@ -16,6 +16,7 @@ WriteConsoleA           proto               ; Write a buffer of characters to th
 GlobalMemoryStatusEx    proto               ; Retrieve information about the system's memory usage.
 GetTickCount64          proto               ; Returns 64-bit tick count in RAX.
 RtlGetVersion           proto               ; Returns version information about the currently running operating system.
+GetProductInfo          proto :dword, :dword, :dword, :dword, :ptr dword
 
 STD_OUTPUT_HANDLE equ   -11                 ; Device code for console output.
 MaxBuf            equ   100                 ; Maximum buffer size.
@@ -86,19 +87,25 @@ MEMORYSTATUSEX STRUCT
 MEMORYSTATUSEX ENDS
 
 ; Structure used by RtlGetVersion; contains operating system version information.
-RTL_OSVERSIONINFOW STRUCT
+RTL_OSVERSIONINFOEXW STRUCT
     dwOSVersionInfoSize         dword   ?
     dwMajorVersion              dword   ?
     dwMinorVersion              dword   ?
     dwBuildNumber               dword   ?
     dwPlatformId                dword   ?
     szCSDVersion                word    128 DUP(?)
-RTL_OSVERSIONINFOW ENDS
+    wServicePackMajor           word    ?
+    wServicePackMinor           word    ?
+    wSuiteMask                  word    ?
+    wProductType                word    ?
+    wReserved                   word    ?
+RTL_OSVERSIONINFOEXW ENDS
 
         .data
 msEx            MEMORYSTATUSEX <>           ; Allocate and zero-initialize an instance of struct MEMORYSTATUSEX.
-osVer           RTL_OSVERSIONINFOW <>       ; Same for RTL_OSVERSIONINFOW.
-osbuf           dword   MaxBuf DUP (?)      ; OS version string buffer.
+osEx            RTL_OSVERSIONINFOEXW <>       ; Same for RTL_OSVERSIONINFOW.
+osbuf           dword   MaxBuf DUP (?)      ; OS version buffer.
+edbuf           dword   MaxBuf DUP (?)      ; OS edition buffer.
 cpubuf          dword   MaxBuf DUP (?)      ; CPU strings buffer.
 membuf          dword   MaxBuf DUP (?)      ; Memory data buffer.
 timebuf         dword   MaxBuf DUP (?)      ; Uptime buffer.
@@ -114,6 +121,7 @@ W11_24H2        byte    "Windows 11 24H2 "
 W11_23H2        byte    "Windows 11 23H2 "
 W11_22H2        byte    "Windows 11 22H2 "
 W11_21H2        byte    "Windows 11 21H2 "
+productType     dword   ?                   ; Store return value from GetProductInfo function.
 cpu_title       byte    "--- Processor ---", 0DH, 0AH
 cpu_vendor      byte    "Vendor : "
 cpu_name        byte    "Model  : "
@@ -315,8 +323,8 @@ main    proc
         strOut  newln, lengthof newln
         strOut  os_title, lengthof os_title
 
-        mov     osVer.dwOSVersionInfoSize, SIZEOF RTL_OSVERSIONINFOW
-        lea     RCX, osVer
+        mov     osEx.dwOSVersionInfoSize, SIZEOF RTL_OSVERSIONINFOEXW
+        lea     RCX, osEx
         call    RtlGetVersion
         test    EAX, EAX                    ; 0 = success; nz = failure
         jz      rtl_success
@@ -324,15 +332,38 @@ main    proc
         jmp     rtl_fail
 
 rtl_success:
+        ; Set values for GetProductInfo
+        mov     ECX, osEx.dwMajorVersion
+        mov     EDX, osEx.dwMinorVersion
+        movzx   R8D, osEx.wServicePackMajor ; Copy WORD to EAX; zero-extend to 32-bit DWORD.
+        movzx   R9D, osEx.wServicePackMinor
+
+        lea     RAX, productType
+        mov     [RSP + 32], RAX             ; Shadow space + 5th arg.
+        call    GetProductInfo
+
+        mov     EAX, [productType]
+
+; TODO: Create a macro for this comparison; add other values besides "Pro" edition.
+        cmp     EAX, 00000030H
+        je      pro_ed
+        jmp     skip
+
+pro_ed:
+        mov     [edbuf], "orP"              ; Store little-endian "Pro" in buffer.
+        jmp     skip
+skip:
+
         ; Version string:
         strOut  os_version, lengthof os_version
-        mov     EAX, osVer.dwBuildNumber
+        mov     EAX, osEx.dwBuildNumber
         verOut  EAX
+        strOut  edbuf, lengthof edbuf
         strOut  newln, lengthof newln
 
         ; Build number:
         strOut  os_build, lengthof os_build
-        mov     EAX, osVer.dwBuildNumber
+        mov     EAX, osEx.dwBuildNumber
         lea     RDI, osbuf + MaxBuf         ; Destination buffer + end position.
         call    Int2Str
         strOut  RAX, R8D
