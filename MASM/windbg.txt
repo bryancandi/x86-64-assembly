@@ -1,0 +1,13 @@
+Microsoft Macro Assembler (MASM)
+
+To assemble 64-bit assembly code while generating debugging information use /Zi flag:
+    ml64.exe .\main.asm /Zi /link /SUBSYSTEM:console /ENTRY:main
+
+Run WinDbg
+Load exe
+
+In command window:
+bp main
+g
+
+Step in/over, etc.
