@@ -290,8 +290,6 @@ GetCpuVend  proc
         mov     [cpubuf + 4], EDX
         mov     [cpubuf + 8], ECX
 
-        ;mov     byte ptr [cpubuf + 12], 0   ; Null terminate string (not required by WriteConsoleA; remove?).
-
         lea     RAX, cpubuf                 ; RAX: point to buffer address.
         mov     R8D, 12                     ; Return length in R8D.
 
@@ -323,8 +321,6 @@ GetCpuBrand  proc
         mov     [cpubuf + 36], EBX
         mov     [cpubuf + 40], ECX
         mov     [cpubuf + 44], EDX
-
-        ;mov     byte ptr [cpubuf + 48], 0
 
         lea     RAX, cpubuf                 ; RAX: point to buffer address.
         mov     R8D, 48                     ; Return length in R8D.
@@ -387,7 +383,7 @@ rtl_success:
         ; Set values for GetProductInfo
         mov     ECX, osEx.dwMajorVersion
         mov     EDX, osEx.dwMinorVersion
-        movzx   R8D, osEx.wServicePackMajor ; Copy WORD to EAX; zero-extend to 32-bit DWORD.
+        movzx   R8D, osEx.wServicePackMajor ; Copy 16-bit WORD to EAX; zero-extend to 32-bit DWORD.
         movzx   R9D, osEx.wServicePackMinor
         lea     RAX, productType
         mov     [RSP + 32], RAX             ; Shadow space + 5th arg.
@@ -485,8 +481,6 @@ mem_success:
         strOut  RAX, R8D
         strOut  gib_label, lengthof gib_label
         strOut  newln, lengthof newln
-
-; TODO: add virtual memory output.
 mem_fail:
 
 ;       Uptime section:
