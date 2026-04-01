@@ -1,7 +1,7 @@
 ;-------------------------------------------------------------------------
 ; x64 System Information utility for Windows console.
 ; Author: Bryan C.
-; Date: 2026
+; Date  : 2026
 ;
 ; Assemble with MASM and link:
 ; ml64.exe sysinfo.asm /link /SUBSYSTEM:console /ENTRY:main
@@ -30,7 +30,7 @@ SecPerMinute      equ   60
 strOut  macro   addr, len
         mov     RCX, stdout                 ; Arg 1: output device handle.
 IFIDNI  <addr>, <RAX>                       ; If addr is RAX, use it directly; otherwise LEA of the label.
-        mov     RDX, RAX                    ; Arg 2: pointer to byte array in register.
+        mov     RDX, RAX                    ; Arg 2: pointer to byte array in RAX register.
 ELSE
         lea     RDX, addr                   ; Arg 2: pointer to byte array label.
 ENDIF
@@ -146,7 +146,7 @@ RTL_OSVERSIONINFOEXW STRUCT
     dwMinorVersion              dword   ?
     dwBuildNumber               dword   ?
     dwPlatformId                dword   ?
-    szCSDVersion                word    128 DUP(?)
+    szCSDVersion                word    128 DUP (?)
     wServicePackMajor           word    ?
     wServicePackMinor           word    ?
     wSuiteMask                  word    ?
@@ -187,14 +187,19 @@ gibi_fract      qword   ?                   ; Store fractional portion of RAM si
 gib_label       byte    " GiB"
 decimal_pt      byte    "."
 uptime_title    byte    "--- System Uptime ---", 0DH, 0AH
+comma_sp        byte    ", "
 days            qword   ?                   ; Uptime days value.
-days_label      byte    " days, "
+days_label      byte    " days"
+day_label       byte    " day"
 hours           qword   ?                   ; Uptime hours value.
-hours_label     byte    " hours, "
+hours_label     byte    " hours"
+hour_label      byte    " hour"
 minutes         qword   ?                   ; Uptime minutes value.
-minutes_label   byte    " minutes, "
+minutes_label   byte    " minutes"
+minute_label    byte    " minute"
 seconds         qword   ?                   ; Uptime seconds value.
 seconds_label   byte    " seconds"
+second_label    byte    " second"
 stdin           qword   ?                   ; Handle to standard input device.
 stdout          qword   ?                   ; Handle to standard output device.
 nbwr            dword   ?                   ; Number of bytes (characters) actually written.
@@ -344,7 +349,7 @@ GetCpuCores  proc
         cpuid
         shr     EAX, 26                     ; Shift bits 31:26 to bottom
         inc     EAX                         ; Core count in EAX.
-        jmp     done
+        jmp     cores_done
 
         ; AMD Processor
 amd_proc:
@@ -354,7 +359,7 @@ amd_proc:
         inc     ECX                         ; Core count in ECX.
         mov     EAX, ECX                    ; Normalize: core count in EAX.
 
-done:
+cores_done:
         pop     RBX
         ret
 GetCpuCores  endp
@@ -490,29 +495,106 @@ mem_fail:
         call    GetTickCount64              ; RAX = uptime in milliseconds.
         call    FormatTime                  ; Convert milliseconds and store in 'days', 'hours', 'minutes', 'seconds'.
 
+        xor     R10D, R10D                  ; R10D = 0, set R10D = 1 if printing a value to determine if a comma is required.
+
         mov     RAX, [days]
+        cmp     RAX, 0                      ; Is uptime less than 1 day?
+        je      hours_out                   ; Yes, skip to hours.
+
         lea     RDI, timebuf + MaxBuf
         call    Int2Str
-        strOut  RAX, R8D
+        strOut  RAX, R8D                    ; Print days string.
+
+        mov     RAX, [days]
+        cmp     RAX, 1                      ; Day or days?
+        je      single_day                  ; Single day only.
         strOut  days_label, lengthof days_label
+        jmp     days_done
+single_day:
+        strOut  day_label, lengthof day_label
+
+days_done:
+        mov     R10D, 1                     ; Comma will be required if printing the next value as well.
+
+hours_out:
+        mov     RAX, [hours]
+        cmp     RAX, 0                      ; Is uptime less than 1 hour?
+        je      minutes_out                 ; Yes, skip to minutes.
+
+        cmp     R10D, 0                     ; Already printed a value?
+        je      no_comma_hours              ; No, do not print a comma.
+        push    RAX                         ; Preserve RAX before strOut macro call.
+        strOut  comma_sp, lengthof comma_sp
+        pop     RAX                         ; Restore RAX for next function call.
+no_comma_hours:
+
+        lea     RDI, timebuf + MaxBuf
+        call    Int2Str
+        strOut  RAX, R8D                    ; Print hours string.
 
         mov     RAX, [hours]
+        cmp     RAX, 1                      ; Hour or hours?
+        je      single_hour                 ; Single hour only.
+        strOut  hours_label, lengthof hours_label
+        jmp     hours_done
+single_hour:
+        strOut  hour_label, lengthof hour_label
+
+hours_done:
+        mov     R10D, 1
+
+minutes_out:
+        mov     RAX, [minutes]
+        cmp     RAX, 0                      ; Is uptime less than 1 minute?
+        je      seconds_out                 ; Yes, skip to seconds.
+
+        cmp     R10D, 0                     ; Already printed a value?
+        je      no_comma_minutes            ; No, do not print comma.
+        push    RAX                         ; Preserve RAX before strOut macro call.
+        strOut  comma_sp, lengthof comma_sp
+        pop     RAX                         ; Restore RAX for next function call.
+no_comma_minutes:
+
         lea     RDI, timebuf + MaxBuf
         call    Int2Str
-        strOut  RAX, R8D
-        strOut  hours_label, lengthof hours_label
+        strOut  RAX, R8D                    ; Print minutes string.
 
         mov     RAX, [minutes]
+        cmp     RAX, 1                      ; Minute or minutes?
+        je      single_min                  ; Single minute only.
+        strOut  minutes_label, lengthof minutes_label
+        jmp     minutes_done
+single_min:
+        strOut  minute_label, lengthof minute_label
+
+minutes_done:
+        mov     R10D, 1
+
+seconds_out:
+        mov     RAX, [seconds]
+        cmp     RAX, 0                      ; Seconds = 0?
+        je      uptime_done
+
+        cmp     R10D, 0                     ; Already printed a value?
+        je      no_comma_seconds            ; No, do not print comma.
+        push    RAX                         ; Preserve RAX before strOut macro call.
+        strOut  comma_sp, lengthof comma_sp
+        pop     RAX                         ; Restore RAX for next function call.
+no_comma_seconds:
+
         lea     RDI, timebuf + MaxBuf
         call    Int2Str
-        strOut  RAX, R8D
-        strOut  minutes_label, lengthof minutes_label
+        strOut  RAX, R8D                    ; Print seconds string.
 
         mov     RAX, [seconds]
-        lea     RDI, timebuf + MaxBuf
-        call    Int2Str
-        strOut  RAX, R8D
+        cmp     RAX, 1                      ; Second or Seconds?
+        je      single_sec                  ; Single second only.
         strOut  seconds_label, lengthof seconds_label
+        jmp     uptime_done
+single_sec:
+        strOut  second_label, lengthof second_label
+
+uptime_done:
         strOut  newln, lengthof newln
         strOut  newln, lengthof newln
 
