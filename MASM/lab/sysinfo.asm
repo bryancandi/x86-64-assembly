@@ -495,80 +495,88 @@ mem_fail:
         call    GetTickCount64              ; RAX = uptime in milliseconds.
         call    FormatTime                  ; Convert milliseconds and store in 'days', 'hours', 'minutes', 'seconds'.
 
-        xor     R10D, R10D                  ; R10D = 0, set R10D = 1 if printing a value to determine if a comma is required.
+        xor     R10D, R10D                  ; Comma flag: 0 = first unit, 1 = comma before next unit.
 
         mov     RAX, [days]
-        cmp     RAX, 0                      ; Is uptime less than 1 day?
+        cmp     RAX, 0                      ; Days = 0?
         je      hours_out                   ; Yes, skip to hours.
+        cmp     RAX, 1                      ; Days = 1?
+        je      single_day                  ; Yes, jump.
 
-        lea     RDI, timebuf + MaxBuf
+        lea     RDI, timebuf + MaxBuf       ; No, continue with plural.
         call    Int2Str
-        strOut  RAX, R8D                    ; Print days string.
-
-        mov     RAX, [days]
-        cmp     RAX, 1                      ; Day or days?
-        je      single_day                  ; Single day only.
+        strOut  RAX, R8D
         strOut  days_label, lengthof days_label
         jmp     days_done
+
 single_day:
+        lea     RDI, timebuf + MaxBuf
+        call    Int2Str
+        strOut  RAX, R8D
         strOut  day_label, lengthof day_label
 
 days_done:
-        mov     R10D, 1                     ; Comma will be required if printing the next value as well.
+        mov     R10D, 1                     ; Set comma flag.
 
 hours_out:
         mov     RAX, [hours]
-        cmp     RAX, 0                      ; Is uptime less than 1 hour?
+        cmp     RAX, 0                      ; Hours = 0?
         je      minutes_out                 ; Yes, skip to minutes.
 
-        cmp     R10D, 0                     ; Already printed a value?
-        je      no_comma_hours              ; No, do not print a comma.
+        cmp     R10D, 0                     ; Already printed a previous value?
+        je      hours_no_comma              ; No, do not print a comma.
         push    RAX                         ; Preserve RAX before strOut macro call.
-        strOut  comma_sp, lengthof comma_sp
+        strOut  comma_sp, lengthof comma_sp ; Yes, print a comma.
         pop     RAX                         ; Restore RAX for next function call.
-no_comma_hours:
+hours_no_comma:
 
-        lea     RDI, timebuf + MaxBuf
+        cmp     RAX, 1                      ; Hours = 1?
+        je      single_hour                 ; Yes, jump.
+
+        lea     RDI, timebuf + MaxBuf       ; No, continue with plural.
         call    Int2Str
-        strOut  RAX, R8D                    ; Print hours string.
-
-        mov     RAX, [hours]
-        cmp     RAX, 1                      ; Hour or hours?
-        je      single_hour                 ; Single hour only.
+        strOut  RAX, R8D
         strOut  hours_label, lengthof hours_label
         jmp     hours_done
+
 single_hour:
+        lea     RDI, timebuf + MaxBuf
+        call    Int2Str
+        strOut  RAX, R8D
         strOut  hour_label, lengthof hour_label
 
 hours_done:
-        mov     R10D, 1
+        mov     R10D, 1                     ; Set comma flag.
 
 minutes_out:
         mov     RAX, [minutes]
-        cmp     RAX, 0                      ; Is uptime less than 1 minute?
+        cmp     RAX, 0                      ; Minutes = 0?
         je      seconds_out                 ; Yes, skip to seconds.
 
-        cmp     R10D, 0                     ; Already printed a value?
-        je      no_comma_minutes            ; No, do not print comma.
+        cmp     R10D, 0                     ; Already printed a previous value?
+        je      minutes_no_comma            ; No, do not print comma.
         push    RAX                         ; Preserve RAX before strOut macro call.
-        strOut  comma_sp, lengthof comma_sp
+        strOut  comma_sp, lengthof comma_sp ; Yes, print a comma.
         pop     RAX                         ; Restore RAX for next function call.
-no_comma_minutes:
+minutes_no_comma:
 
-        lea     RDI, timebuf + MaxBuf
+        cmp     RAX, 1                      ; Minutes = 1?
+        je      single_minute               ; Yes, jump.
+
+        lea     RDI, timebuf + MaxBuf       ; No, continue with plural.
         call    Int2Str
-        strOut  RAX, R8D                    ; Print minutes string.
-
-        mov     RAX, [minutes]
-        cmp     RAX, 1                      ; Minute or minutes?
-        je      single_min                  ; Single minute only.
+        strOut  RAX, R8D
         strOut  minutes_label, lengthof minutes_label
         jmp     minutes_done
-single_min:
+
+single_minute:
+        lea     RDI, timebuf + MaxBuf
+        call    Int2Str
+        strOut  RAX, R8D
         strOut  minute_label, lengthof minute_label
 
 minutes_done:
-        mov     R10D, 1
+        mov     R10D, 1                     ; Set comma flag.
 
 seconds_out:
         mov     RAX, [seconds]
@@ -576,22 +584,25 @@ seconds_out:
         je      uptime_done
 
         cmp     R10D, 0                     ; Already printed a value?
-        je      no_comma_seconds            ; No, do not print comma.
+        je      seconds_no_comma            ; No, do not print comma.
         push    RAX                         ; Preserve RAX before strOut macro call.
-        strOut  comma_sp, lengthof comma_sp
+        strOut  comma_sp, lengthof comma_sp ; Yes, print a comma.
         pop     RAX                         ; Restore RAX for next function call.
-no_comma_seconds:
+seconds_no_comma:
 
-        lea     RDI, timebuf + MaxBuf
+        cmp     RAX, 1                      ; Seconds = 1?
+        je      single_second               ; Yes, jump.
+
+        lea     RDI, timebuf + MaxBuf       ; No, continue with plural.
         call    Int2Str
-        strOut  RAX, R8D                    ; Print seconds string.
-
-        mov     RAX, [seconds]
-        cmp     RAX, 1                      ; Second or Seconds?
-        je      single_sec                  ; Single second only.
+        strOut  RAX, R8D
         strOut  seconds_label, lengthof seconds_label
         jmp     uptime_done
-single_sec:
+
+single_second:
+        lea     RDI, timebuf + MaxBuf
+        call    Int2Str
+        strOut  RAX, R8D
         strOut  second_label, lengthof second_label
 
 uptime_done:
