@@ -12,11 +12,11 @@ includelib ntdll.lib                        ; NT native system calls.
 
 ExitProcess             proto               ; Terminate the current process.
 GetStdHandle            proto               ; Retrieve a handle to a standard device (input/output).
-WriteConsoleA           proto               ; Write a buffer of characters to the console.
-GlobalMemoryStatusEx    proto               ; Retrieve information about the system's memory usage.
-GetTickCount64          proto               ; Return 64-bit tick count in RAX.
-RtlGetVersion           proto               ; Return version information about the currently running operating system.
-GetProductInfo          proto :dword, :dword, :dword, :dword, :ptr dword ; Return product edition.
+WriteConsoleA           proto
+GlobalMemoryStatusEx    proto :ptr MEMORYSTATUSEX
+GetTickCount64          proto
+RtlGetVersion           proto :ptr RTL_OSVERSIONINFOEXW
+GetProductInfo          proto :dword, :dword, :dword, :dword, :ptr dword
 
 STD_OUTPUT_HANDLE equ   -11                 ; Device code for console output.
 MaxBuf            equ   100
@@ -388,7 +388,7 @@ rtl_success:
         ; Set values for GetProductInfo
         mov     ECX, osEx.dwMajorVersion
         mov     EDX, osEx.dwMinorVersion
-        movzx   R8D, osEx.wServicePackMajor ; Copy 16-bit WORD to EAX; zero-extend to 32-bit DWORD.
+        movzx   R8D, osEx.wServicePackMajor ; Copy 16-bit WORD; zero-extend to 32-bit DWORD in R8D.
         movzx   R9D, osEx.wServicePackMinor
         lea     RAX, productType
         mov     [RSP + 32], RAX             ; Shadow space + 5th arg.
