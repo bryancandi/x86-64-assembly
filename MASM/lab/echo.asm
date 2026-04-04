@@ -1,33 +1,33 @@
-;-------------------------------------------------------------------------
+;====================================================================
 ; x64 ECHO program for Windows console.
 ; Repeatedly reads a line of input and echoes it back to the console.
 ; Terminates when an empty line (CRLF only) is entered.
 ;
 ; Assemble with MASM and link:
 ; ml64.exe echo.asm /link /SUBSYSTEM:console /ENTRY:main
-;-------------------------------------------------------------------------
+;====================================================================
 
-includelib kernel32.lib                     ; Import Kernel32 library (Windows API).
+INCLUDELIB kernel32.lib                     ; Import Kernel32 library (Windows API).
 
-ExitProcess     proto                       ; Terminate the current process.
-GetStdHandle    proto                       ; Retrieve a handle to a standard device (input/output).
-ReadConsoleA    proto                       ; Read characters from the console input buffer.
-WriteConsoleA   proto                       ; Write a buffer of characters to the console.
+ExitProcess     PROTO                       ; Terminate the current process.
+GetStdHandle    PROTO                       ; Retrieve a handle to a standard device (input/output).
+ReadConsoleA    PROTO                       ; Read characters from the console input buffer.
+WriteConsoleA   PROTO                       ; Write a buffer of characters to the console.
 
-STD_INPUT_HANDLE  equ    -10                ; Device code for keyboard input.
-STD_OUTPUT_HANDLE equ    -11                ; Device code for console output.
-MaxBuf            equ    100                ; Maximum input buffer size.
+STD_INPUT_HANDLE  EQU    -10                ; Device code for keyboard input.
+STD_OUTPUT_HANDLE EQU    -11                ; Device code for console output.
+MaxBuf            EQU    100                ; Maximum input buffer size.
 
-        .data
-pmsg    byte    "Enter text: "              ; User prompt message.
-inbuf   byte    MaxBuf DUP (?)              ; Input buffer of MaxBuf size.
-stdin   qword   ?                           ; Handle to standard input device.
-stdout  qword   ?                           ; Handle to standard output device.
-nbwr    dword   ?                           ; Number of bytes (characters) actually written.
-nbrd    dword   ?                           ; Number of bytes (characters) actually read.
+        .DATA
+pmsg    BYTE    "Enter text: "              ; User prompt message.
+inbuf   BYTE    MaxBuf DUP (?)              ; Input buffer of MaxBuf size.
+stdin   QWORD   ?                           ; Handle to standard input device.
+stdout  QWORD   ?                           ; Handle to standard output device.
+nbwr    DWORD   ?                           ; Number of bytes (characters) actually written.
+nbrd    DWORD   ?                           ; Number of bytes (characters) actually read.
 
-        .code
-main    proc
+        .CODE
+main    PROC
         sub     RSP, 40                     ; Reserve "shadow space" on stack for 4 args (32 shadow + 8 alignment).
 
 ;       Obtain handle for standard input (keyboard).
@@ -43,7 +43,7 @@ main    proc
 ;       Print prompt to console.
 next:   mov     RCX, stdout                 ; Arg 1: output device handle.
         lea     RDX, pmsg                   ; Arg 2: pointer to byte array.
-        mov     R8, lengthof pmsg           ; Arg 3: number of bytes to write (length of prompt string).
+        mov     R8, LENGTHOF pmsg           ; Arg 3: number of bytes to write (length of prompt string).
         lea     R9, nbwr                    ; Arg 4: pointer to variable that receives number of bytes written.
         call    WriteConsoleA               ; Function call to write text to console.
 
@@ -72,5 +72,5 @@ next:   mov     RCX, stdout                 ; Arg 1: output device handle.
 ;       Program exit.
 exit:   xor     RCX, RCX                    ; Set exit status code to zero.
         call    ExitProcess                 ; Call the ExitProcess function to exit the program.
-main    endp
-        end
+main    ENDP
+        END
