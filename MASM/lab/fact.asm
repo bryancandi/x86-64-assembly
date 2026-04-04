@@ -16,8 +16,8 @@ CommandLineToArgvW  PROTO
 
 Console             EQU    -11
 
-; msgOut macro writes ASCII string 'msg' to console using stdout handle.
-msgOut  MACRO   msg             ; One arg macro: msg
+; MsgOut macro writes ASCII string 'msg' to console using stdout handle.
+MsgOut  MACRO   msg             ; One arg macro: msg
         mov     RCX, stdout     ; 1st arg: handle to console screen buffer.
         lea     RDX, msg        ; 2nd arg: pointer to buffer (macro) that contain text to write.
         mov     R8, LENGTHOF msg ; 3rd arg: number of characters to be written to console.
@@ -105,15 +105,15 @@ main    PROC
         call    CalcFact        ; Compute factorial of RCX; result returned in RAX.
         call    IntToStr        ; Convert RAX (factorial result) to ASCII string in 'buf'.
 
-        msgOut  fact            ; Write to console.
-        msgOut  buf
-        msgOut  newln
+        MsgOut  fact            ; Write to console.
+        MsgOut  buf
+        MsgOut  newln
 
 exit:   xor     RCX, RCX        ; Exit code 0.
         call    ExitProcess
 
-error:  msgOut  usage           ; Write error to console.
-        msgOut  newln
+error:  MsgOut  usage           ; Write error to console.
+        MsgOut  newln
         jmp     exit
 main    ENDP
         END
