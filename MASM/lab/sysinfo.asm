@@ -1,11 +1,11 @@
-;-------------------------------------------------------------------------
+;====================================================================
 ; x64 System Information utility for Windows console.
 ; Author: Bryan C.
 ; Date  : 2026
 ;
 ; Assemble with MASM and link:
 ; ml64.exe sysinfo.asm /link /SUBSYSTEM:console /ENTRY:main
-;-------------------------------------------------------------------------
+;====================================================================
 
 INCLUDELIB kernel32.lib                     ; Win32 API functions.
 INCLUDELIB ntdll.lib                        ; NT native system calls.
@@ -75,25 +75,25 @@ done:
 GetEdi  MACRO   reg
     LOCAL home, home_sl, home_n, pro, pro_n, pro_edu, pro_ws, edu, ent, ent_n, done
 
-        cmp     reg, 00000065H
+        cmp     reg, 00000065h
         je      home
-        cmp     reg, 00000064H
+        cmp     reg, 00000064h
         je      home_sl
-        cmp     reg, 00000062H
+        cmp     reg, 00000062h
         je      home_n
-        cmp     reg, 00000030H
+        cmp     reg, 00000030h
         je      pro
-        cmp     reg, 00000031H
+        cmp     reg, 00000031h
         je      pro_n
-        cmp     reg, 000000A4H
+        cmp     reg, 000000A4h
         je      pro_edu
-        cmp     reg, 000000A1H
+        cmp     reg, 000000A1h
         je      pro_ws
-        cmp     reg, 00000079H
+        cmp     reg, 00000079h
         je      edu
-        cmp     reg, 00000004H
+        cmp     reg, 00000004h
         je      ent
-        cmp     reg, 0000001BH
+        cmp     reg, 0000001Bh
         je      ent_n
 
 ; Write edition label into edbuf via little-endian DWORD literals:
@@ -162,11 +162,11 @@ edbuf           DWORD   MaxBuf DUP (?)      ; OS edition buffer.
 cpubuf          DWORD   MaxBuf DUP (?)      ; CPU strings buffer.
 membuf          DWORD   MaxBuf DUP (?)      ; Memory data buffer.
 timebuf         DWORD   MaxBuf DUP (?)      ; Uptime buffer.
-newln           BYTE    0DH, 0AH            ; CRLF
-os_title        BYTE    "--- Operating System ---", 0DH, 0AH
+newln           BYTE    0Dh, 0Ah            ; CRLF
+os_title        BYTE    "--- Operating System ---", 0Dh, 0Ah
 os_version      BYTE    "Version : "
 os_build        BYTE    "Build   : "
-os_error        BYTE    "Error: Unable to retrieve OS version information.", 0DH, 0AH
+os_error        BYTE    "Error: Unable to retrieve OS version information.", 0Dh, 0Ah
 W11_26H1        BYTE    "Windows 11 (26H1) "
 W11_25H2        BYTE    "Windows 11 (25H2) "
 W11_24H2        BYTE    "Windows 11 (24H2) "
@@ -174,19 +174,19 @@ W11_23H2        BYTE    "Windows 11 (23H2) "
 W11_22H2        BYTE    "Windows 11 (22H2) "
 W11_21H2        BYTE    "Windows 11 (21H2) "
 productType     DWORD   ?                   ; Store return value from GetProductInfo function.
-cpu_title       BYTE    "--- Processor ---", 0DH, 0AH
+cpu_title       BYTE    "--- Processor ---", 0Dh, 0Ah
 cpu_vendor      BYTE    "Vendor : "
 cpu_name        BYTE    "Model  : "
 cpu_cores       BYTE    "Cores  : "
-mem_title       BYTE    "--- Memory ---", 0DH, 0AH
+mem_title       BYTE    "--- Memory ---", 0Dh, 0Ah
 mem_total       BYTE    "RAM Total : "
 mem_free        BYTE    "RAM Free  : "
-mem_error       BYTE    "Error: Unable to retrieve memory information.", 0DH, 0AH
+mem_error       BYTE    "Error: Unable to retrieve memory information.", 0Dh, 0Ah
 gibi_whole      QWORD   ?                   ; Store whole portion of RAM size.
 gibi_fract      QWORD   ?                   ; Store fractional portion of RAM size.
 gib_label       BYTE    " GiB"
 decimal_pt      BYTE    "."
-uptime_title    BYTE    "--- System Uptime ---", 0DH, 0AH
+uptime_title    BYTE    "--- System Uptime ---", 0Dh, 0Ah
 comma_sp        BYTE    ", "
 days            QWORD   ?                   ; Uptime days value.
 days_label      BYTE    " days"
