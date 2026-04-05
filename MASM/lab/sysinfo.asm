@@ -17,6 +17,7 @@ GlobalMemoryStatusEx    PROTO :PTR MEMORYSTATUSEX
 GetTickCount64          PROTO
 RtlGetVersion           PROTO :PTR RTL_OSVERSIONINFOEXW
 GetProductInfo          PROTO :DWORD, :DWORD, :DWORD, :DWORD, :PTR DWORD
+GetNativeSystemInfo     PROTO :PTR SYSTEM_INFO
 
 STD_OUTPUT_HANDLE EQU   -11                 ; Device code for console output.
 MaxBuf            EQU   100
@@ -126,6 +127,21 @@ ent_n:  mov     [edbuf], 'tnE'
 done:
         ENDM
 
+; Structure used by GetNativeSystemInfo.
+SYSTEM_INFO STRUCT
+    wProcessorArchitecture      WORD    ?
+    wReserved                   WORD    ?
+    dwPageSize                  DWORD   ?
+    lpMinimumApplicationAddress QWORD   ?
+    lpMaximumApplicationAddress QWORD   ?
+    dwActiveProcessorMask       QWORD   ?
+    dwNumberOfProcessors        DWORD   ?
+    dwProcessorType             DWORD   ?
+    dwAllocationGranularity     DWORD   ?
+    wProcessorLevel             WORD    ?
+    wProcessorRevision          WORD    ?
+SYSTEM_INFO ENDS
+
 ; Structure used by GlobalMemoryStatusEx; contains both physical and virtual memory state.
 MEMORYSTATUSEX STRUCT
     dwLength                    DWORD   ?
@@ -155,7 +171,8 @@ RTL_OSVERSIONINFOEXW STRUCT
 RTL_OSVERSIONINFOEXW ENDS
 
         .DATA
-msEx            MEMORYSTATUSEX <>           ; Allocate and zero-initialize struct.
+sysInf          SYSTEM_INFO <>              ; Allocate and zero-initialize struct.
+msEx            MEMORYSTATUSEX <>
 osEx            RTL_OSVERSIONINFOEXW <>
 osbuf           DWORD   MaxBuf DUP (?)      ; OS version buffer.
 edbuf           DWORD   MaxBuf DUP (?)      ; OS edition buffer.
@@ -175,12 +192,18 @@ W11_22H2        BYTE    "Windows 11 (22H2) "
 W11_21H2        BYTE    "Windows 11 (21H2) "
 productType     DWORD   ?                   ; Store return value from GetProductInfo function.
 cpu_title       BYTE    "--- Processor ---", 0Dh, 0Ah
-cpu_vendor      BYTE    "Vendor : "
-cpu_name        BYTE    "Model  : "
-cpu_cores       BYTE    "Cores  : "
+cpu_vendor      BYTE    "Vendor       : "
+cpu_name        BYTE    "Model        : "
+cpu_cores       BYTE    "Cores        : "
+cpu_x86         BYTE    "Architecture : x86"
+cpu_x64         BYTE    "Architecture : x64 (AMD64)"
+cpu_arm         BYTE    "Architecture : ARM"
+cpu_arm64       BYTE    "Architecture : ARM64"
+cpu_ia64        BYTE    "Architecture : Intel Itanium"
+cpu_unknown     BYTE    "Architecture : Unknown"
 mem_title       BYTE    "--- Memory ---", 0Dh, 0Ah
-mem_total       BYTE    "RAM Total : "
-mem_free        BYTE    "RAM Free  : "
+mem_total       BYTE    "RAM Total    : "
+mem_free        BYTE    "RAM Free     : "
 mem_error       BYTE    "Error: Unable to retrieve memory information.", 0Dh, 0Ah
 gibi_whole      QWORD   ?                   ; Store whole portion of RAM size.
 gibi_fract      QWORD   ?                   ; Store fractional portion of RAM size.
@@ -364,6 +387,50 @@ cores_done:
         ret
 GetCpuCores ENDP
 
+; Return CPU architecture in RAX; length in R8D.
+GetCpuArch PROC
+        lea     RCX, sysInf
+        call    GetNativeSystemInfo
+        movzx   EAX, sysInf.wProcessorArchitecture
+        cmp     EAX, 0                      ; 0 = x86
+        je      is_x86
+        cmp     EAX, 9                      ; 9 = x64
+        je      is_x64
+        cmp     EAX, 5                      ; 5 = ARM
+        je      is_arm
+        cmp     EAX, 12                     ; 12 = ARM64
+        je      is_arm64
+        cmp     EAX, 6                      ; 6 = IA64
+        je      is_ia64
+
+        lea     RAX, cpu_unknown
+        mov     R8D, LENGTHOF cpu_unknown
+        jmp     arch_done
+is_x86:
+        lea     RAX, cpu_x86
+        mov     R8D, LENGTHOF cpu_x86
+        jmp     arch_done
+is_x64:
+        lea     RAX, cpu_x64
+        mov     R8D, LENGTHOF cpu_x64
+        jmp     arch_done
+is_arm:
+        lea     RAX, cpu_arm
+        mov     R8D, LENGTHOF cpu_arm
+        jmp     arch_done
+is_arm64:
+        lea     RAX, cpu_arm64
+        mov     R8D, LENGTHOF cpu_arm64
+        jmp     arch_done
+is_ia64:
+        lea     RAX, cpu_ia64
+        mov     R8D, LENGTHOF cpu_ia64
+        jmp     arch_done
+arch_done:
+
+        ret
+GetCpuArch ENDP
+
 main    PROC
         sub     RSP, 40                     ; Reserve "shadow space" on stack for 4 args (32 shadow + 8 alignment).
 
@@ -411,6 +478,7 @@ rtl_success:
         call    Int2Str
         StrOut  RAX, R8D
         StrOut  newln, LENGTHOF newln
+rtl_fail:
 
 ;       Processor section:
         StrOut  newln, LENGTHOF newln
@@ -432,7 +500,10 @@ rtl_success:
         call    Int2Str
         StrOut  RAX, R8D
         StrOut  newln, LENGTHOF newln
-rtl_fail:
+
+        call    GetCpuArch
+        StrOut  RAX, R8D
+        StrOut  newln, LENGTHOF newln
 
 ;       Memory section:
         StrOut  newln, LENGTHOF newln
