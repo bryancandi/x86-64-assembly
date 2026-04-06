@@ -91,14 +91,13 @@ osEx            RTL_OSVERSIONINFOEXW <>
 ; Output buffers:
 tmpbuf          DWORD   MaxBuf DUP (?)      ; Temp buffer for Int2Str or general use.
 cpubuf          DWORD   MaxBuf DUP (?)      ; CPU strings buffer.
-membuf          DWORD   MaxBuf DUP (?)      ; Memory data buffer.
+membuf          QWORD   MaxBuf DUP (?)      ; Memory data buffer.
 timebuf         DWORD   MaxBuf DUP (?)      ; Uptime buffer.
 ; Operating system strings:
 os_title        BYTE    "--- Operating System ---", 0Dh, 0Ah
 os_version      BYTE    "Version      : "
 os_edition      BYTE    "Edition      : "
 os_build        BYTE    "Build        : "
-os_error        BYTE    "Error: Unable to retrieve OS version information.", 0Dh, 0Ah
 w11_26H1        BYTE    "Windows 11 (26H1)"
 w11_25H2        BYTE    "Windows 11 (25H2)"
 w11_24H2        BYTE    "Windows 11 (24H2)"
@@ -131,8 +130,7 @@ cpu_unknown     BYTE    "Architecture : Unknown"
 ; Memory strings:
 mem_title       BYTE    "--- Memory ---", 0Dh, 0Ah
 mem_total       BYTE    "RAM Total    : "
-mem_free        BYTE    "RAM Free     : "
-mem_error       BYTE    "Error: Unable to retrieve memory information.", 0Dh, 0Ah
+mem_avail       BYTE    "RAM Free     : "
 gibi_whole      QWORD   ?                   ; Store whole portion of RAM size.
 gibi_fract      QWORD   ?                   ; Store fractional portion of RAM size.
 gib_label       BYTE    " GiB"
@@ -206,7 +204,7 @@ Byte2GiB PROC
 Byte2GiB ENDP
 
 ; Convert milliseconds in RAX to a human-readable format.
-FormatTime PROC
+ConvertToDHMS PROC
         ; RAX = uptime milliseconds
         xor     RDX, RDX                    ; Clear RDX for division.
         mov     R8, MsPerSecond             ; Divisor in R8 = milliseconds per second.
@@ -238,7 +236,7 @@ FormatTime PROC
         mov     [seconds], RAX
 
         ret
-FormatTime ENDP
+ConvertToDHMS ENDP
 
 ; Return pointer to Windows version string in RAX; byte length in R8D.
 GetWinVer PROC
@@ -472,7 +470,7 @@ cores_done:
         ret
 GetCpuCores ENDP
 
-; Return pointer to CPU architecture in RAX; length in R8D.
+; Return pointer to CPU architecture string in RAX; byte length in R8D.
 GetCpuArch PROC
         lea     RCX, sysInf
         call    GetNativeSystemInfo
@@ -515,120 +513,48 @@ arch_done:
         ret
 GetCpuArch ENDP
 
-main    PROC
-        sub     RSP, 40                     ; Reserve "shadow space" on stack for 4 args (32 shadow + 8 alignment).
-
-        ; Obtain handle for standard output.
-        mov     RCX, STD_OUTPUT_HANDLE      ; Standard output device code for GetStdHandle.
-        call    GetStdHandle                ; Return handle to standard output.
-        mov     stdout, RAX                 ; Store the handle for console output.
-
-;       Operating system section:
-        StrOut  newln, LENGTHOF newln
-        StrOut  os_title, LENGTHOF os_title
-
-        StrOut  os_version, LENGTHOF os_version
-        call    GetWinVer
-        StrOut  RAX, R8D
-        StrOut  newln, LENGTHOF newln
-
-        StrOut  os_edition, LENGTHOF os_edition
-        call    GetWinEdition
-        StrOut  RAX, R8D
-        StrOut  newln, LENGTHOF newln
-
-        StrOut  os_build, LENGTHOF os_build
-        call    GetWinBuild
-        lea     RDI, tmpbuf + MaxBuf
-        call    Int2Str
-        StrOut  RAX, R8D
-        StrOut  newln, LENGTHOF newln
-
-;       Processor section:
-        StrOut  newln, LENGTHOF newln
-        StrOut  cpu_title, LENGTHOF cpu_title
-
-        StrOut  cpu_vendor, LENGTHOF cpu_vendor
-        call    GetCpuVend
-        StrOut  RAX, R8D
-        StrOut  newln, LENGTHOF newln
-
-        StrOut  cpu_name, LENGTHOF cpu_name
-        call    GetCpuBrand
-        StrOut  RAX, R8D
-        StrOut  newln, LENGTHOF newln
-
-        StrOut  cpu_cores, LENGTHOF cpu_cores
-        call    GetCpuCores
-        lea     RDI, cpubuf + MaxBuf
-        call    Int2Str
-        StrOut  RAX, R8D
-        StrOut  newln, LENGTHOF newln
-
-        call    GetCpuArch
-        StrOut  RAX, R8D
-        StrOut  newln, LENGTHOF newln
-
-;       Memory section:
-        StrOut  newln, LENGTHOF newln
-        StrOut  mem_title, LENGTHOF mem_title
-
+; Return total memory in bytes as integer in RAX.
+GetMemTotal PROC
         mov     msEx.dwLength, SIZEOF MEMORYSTATUSEX
         lea     RCX, msEx
         call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer).
-        test    RAX, RAX                    ; 1 = success; 0 = failure
-        jnz     mem_success
-        StrOut  mem_error, LENGTHOF mem_error
-        jmp     mem_fail
 
-mem_success:
-        ; RAM total
-        StrOut  mem_total, LENGTHOF mem_total
+        test    RAX, RAX                    ; nz = success; 0 = failure
+        jz      mem_fail
+
         mov     RAX, msEx.ullTotalPhys      ; Load QWORD from struct.
-        call    Byte2GiB                    ; Convert bytes to GiB.
+        ret
 
-        ; Whole portion:
-        mov     RAX, [gibi_whole]           ; Move first part of size into RAX to convert to string.
-        lea     RDI, membuf + MaxBuf        ; Destination buffer + end position.
-        call    Int2Str
-        StrOut  RAX, R8D                    ; Print whole portion of RAM size.
-        StrOut  decimal_pt, LENGTHOF decimal_pt
-
-        ; Fractional portion:
-        mov     RAX, [gibi_fract]           ; Move second part of size into RAX to convert to string.
-        lea     RDI, membuf + MaxBuf
-        call    Int2Str
-        StrOut  RAX, R8D
-        StrOut  gib_label, LENGTHOF gib_label
-        StrOut  newln, LENGTHOF newln
-
-        ; RAM available
-        StrOut  mem_free, LENGTHOF mem_free
-        mov     RAX, msEx.ullAvailPhys      ; Load QWORD from struct.
-        call    Byte2GiB
-
-        ; Whole portion:
-        mov     RAX, [gibi_whole]           ; Move first part of size into RAX to convert to string.
-        lea     RDI, membuf + MaxBuf
-        call    Int2Str
-        StrOut  RAX, R8D                    ; Print whole portion of RAM size.
-        StrOut  decimal_pt, LENGTHOF decimal_pt
-
-        ; Fractional portion:
-        mov     RAX, [gibi_fract]           ; Move second part of size into RAX to convert to string.
-        lea     RDI, membuf + MaxBuf
-        call    Int2Str
-        StrOut  RAX, R8D
-        StrOut  gib_label, LENGTHOF gib_label
-        StrOut  newln, LENGTHOF newln
 mem_fail:
+        xor     RAX, RAX                    ; Fail = return zeros.
+        xor     R10, R10
+        ret
+GetMemTotal ENDP
 
-;       Uptime section:
-        StrOut  newln, LENGTHOF newln
-        StrOut  uptime_title, LENGTHOF uptime_title
+; Return free memory in bytes as integer in RAX.
+GetMemAvail PROC
+        mov     msEx.dwLength, SIZEOF MEMORYSTATUSEX
+        lea     RCX, msEx
+        call    GlobalMemoryStatusEx        ; Fills MEMORYSTATUSEX struct (after dwLength is set and RCX = pointer).
+
+        test    RAX, RAX                    ; nz = success; 0 = failure
+        jz      mem_fail
+
+        mov     RAX, msEx.ullAvailPhys      ; Load QWORD from struct.
+        ret
+
+mem_fail:
+        xor     RAX, RAX                    ; Fail = return zeros.
+        xor     R10, R10
+        ret
+GetMemAvail ENDP
+
+; Print a formatted uptime string directly to the console when called.
+PrintFormatUptime PROC
+        push    RDI
 
         call    GetTickCount64              ; RAX = uptime in milliseconds.
-        call    FormatTime                  ; Convert milliseconds and store in 'days', 'hours', 'minutes', 'seconds'.
+        call    ConvertToDHMS               ; Convert milliseconds and store in 'days', 'hours', 'minutes', 'seconds'.
 
         xor     R10D, R10D                  ; Comma flag: 0 = first unit, 1 = comma before next unit.
 
@@ -742,6 +668,103 @@ single_second:
 
 uptime_done:
         StrOut  newln, LENGTHOF newln
+        pop     RDI
+        ret
+PrintFormatUptime ENDP
+
+main    PROC
+        sub     RSP, 40                     ; Reserve "shadow space" on stack for 4 args (32 shadow + 8 alignment).
+
+        ; Obtain handle for standard output.
+        mov     RCX, STD_OUTPUT_HANDLE      ; Standard output device code for GetStdHandle.
+        call    GetStdHandle                ; Return handle to standard output.
+        mov     stdout, RAX                 ; Store the handle for console output.
+
+;       Operating system section:
+        StrOut  newln, LENGTHOF newln
+        StrOut  os_title, LENGTHOF os_title
+
+        StrOut  os_version, LENGTHOF os_version
+        call    GetWinVer
+        StrOut  RAX, R8D
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  os_edition, LENGTHOF os_edition
+        call    GetWinEdition
+        StrOut  RAX, R8D
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  os_build, LENGTHOF os_build
+        call    GetWinBuild
+        lea     RDI, tmpbuf + MaxBuf
+        call    Int2Str
+        StrOut  RAX, R8D
+        StrOut  newln, LENGTHOF newln
+
+;       Processor section:
+        StrOut  newln, LENGTHOF newln
+        StrOut  cpu_title, LENGTHOF cpu_title
+
+        StrOut  cpu_vendor, LENGTHOF cpu_vendor
+        call    GetCpuVend
+        StrOut  RAX, R8D
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  cpu_name, LENGTHOF cpu_name
+        call    GetCpuBrand
+        StrOut  RAX, R8D
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  cpu_cores, LENGTHOF cpu_cores
+        call    GetCpuCores
+        lea     RDI, cpubuf + MaxBuf
+        call    Int2Str
+        StrOut  RAX, R8D
+        StrOut  newln, LENGTHOF newln
+
+        call    GetCpuArch
+        StrOut  RAX, R8D
+        StrOut  newln, LENGTHOF newln
+
+;       Memory section:
+        StrOut  newln, LENGTHOF newln
+        StrOut  mem_title, LENGTHOF mem_title
+
+        StrOut  mem_total, LENGTHOF mem_total
+        call    GetMemTotal
+        call    Byte2GiB
+        mov     RAX, [gibi_whole]
+        lea     RDI, membuf + MaxBuf
+        call    Int2Str
+        StrOut  RAX, R8D
+        StrOut  decimal_pt, LENGTHOF decimal_pt
+        mov     RAX, [gibi_fract]
+        lea     RDI, membuf + MaxBuf
+        call    Int2Str
+        StrOut  RAX, R8D
+        StrOut  gib_label, LENGTHOF gib_label
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  mem_avail, LENGTHOF mem_avail
+        call    GetMemAvail
+        call    Byte2GiB
+        mov     RAX, [gibi_whole]
+        lea     RDI, membuf + MaxBuf
+        call    Int2Str
+        StrOut  RAX, R8D
+        StrOut  decimal_pt, LENGTHOF decimal_pt
+        mov     RAX, [gibi_fract]
+        lea     RDI, membuf + MaxBuf
+        call    Int2Str
+        StrOut  RAX, R8D
+        StrOut  gib_label, LENGTHOF gib_label
+        StrOut  newln, LENGTHOF newln
+
+;       Uptime section:
+        StrOut  newln, LENGTHOF newln
+        StrOut  uptime_title, LENGTHOF uptime_title
+
+        call    PrintFormatUptime
         StrOut  newln, LENGTHOF newln
 
 exit:
