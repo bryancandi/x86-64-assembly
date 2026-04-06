@@ -240,7 +240,7 @@ FormatTime PROC
         ret
 FormatTime ENDP
 
-; Return pointer to version string in RAX; byte length in R8D.
+; Return pointer to Windows version string in RAX; byte length in R8D.
 GetWinVer PROC
         mov     osEx.dwOSVersionInfoSize, SIZEOF RTL_OSVERSIONINFOEXW
         lea     RCX, osEx
@@ -297,7 +297,7 @@ winver_done:
         ret
 GetWinVer ENDP
 
-; Return pointer to edition string in RAX; byte length in R8D.
+; Return pointer to Windows edition string in RAX; byte length in R8D.
 GetWinEdition PROC
         mov     ECX, osEx.dwMajorVersion
         mov     EDX, osEx.dwMinorVersion
@@ -387,15 +387,9 @@ edition_done:
         ret
 GetWinEdition ENDP
 
-; Return Windows build number in RAX, length in R8D.
+; Return Windows build number in EAX.
 GetWinBuild PROC
-        push    RDI
-
         mov     EAX, osEx.dwBuildNumber
-        lea     RDI, tmpbuf + MaxBuf
-        call    Int2Str                     ; RAX = build number as a string; length in R8D set by Int2Str.
-
-        pop     RDI
         ret
 GetWinBuild ENDP
 
@@ -545,6 +539,8 @@ main    PROC
 
         StrOut  os_build, LENGTHOF os_build
         call    GetWinBuild
+        lea     RDI, tmpbuf + MaxBuf
+        call    Int2Str
         StrOut  RAX, R8D
         StrOut  newln, LENGTHOF newln
 
