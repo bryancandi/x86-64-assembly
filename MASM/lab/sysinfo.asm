@@ -27,7 +27,7 @@ SecPerDay         EQU   86400
 SecPerHour        EQU   3600
 SecPerMinute      EQU   60
 
-; Write a string to the console. addr may be RAX or a label; len is copied into R8D.
+; Macro: write a string to the console. addr may be RAX or a label; len is copied into R8D.
 StrOut  MACRO   addr, len
         mov     RCX, stdout                 ; Arg 1: output device handle.
 IFIDNI  <addr>, <RAX>                       ; If addr is RAX, use it directly; otherwise LEA of the label.
@@ -38,93 +38,6 @@ ENDIF
         mov     R8D, len                    ; Arg 3: number of bytes to write.
         lea     R9, nbwr                    ; Arg 4: pointer to variable that receives number of bytes written.
         call    WriteConsoleA
-        ENDM
-
-; Print the Windows 11 version string for the given build number.
-VerOut  MACRO   reg
-    LOCAL Win11_26H1, Win11_25H2, Win11_24H2, Win11_23H2, Win11_22H2, Win11_21H2, done
-
-        cmp     reg, 28000
-        jae     Win11_26H1
-        cmp     reg, 26200
-        jae     Win11_25H2
-        cmp     reg, 26100
-        jae     Win11_24H2
-        cmp     reg, 22631
-        jae     Win11_23H2
-        cmp     reg, 22621
-        jae     Win11_22H2
-        cmp     reg, 22000
-        jae     Win11_21H2
-
-Win11_26H1: StrOut W11_26H1, LENGTHOF W11_26H1
-        jmp     done
-Win11_25H2: StrOut W11_25H2, LENGTHOF W11_25H2
-        jmp     done
-Win11_24H2: StrOut W11_24H2, LENGTHOF W11_24H2
-        jmp     done
-Win11_23H2: StrOut W11_23H2, LENGTHOF W11_23H2
-        jmp     done
-Win11_22H2: StrOut W11_22H2, LENGTHOF W11_22H2
-        jmp     done
-Win11_21H2: StrOut W11_21H2, LENGTHOF W11_21H2
-        jmp     done
-done:
-        ENDM
-
-; Compare the value returned by GetProductInfo; store current Windows edition in edbuf.
-GetEdi  MACRO   reg
-    LOCAL home, home_sl, home_n, pro, pro_n, pro_edu, pro_ws, edu, ent, ent_n, done
-
-        cmp     reg, 00000065h
-        je      home
-        cmp     reg, 00000064h
-        je      home_sl
-        cmp     reg, 00000062h
-        je      home_n
-        cmp     reg, 00000030h
-        je      pro
-        cmp     reg, 00000031h
-        je      pro_n
-        cmp     reg, 000000A4h
-        je      pro_edu
-        cmp     reg, 000000A1h
-        je      pro_ws
-        cmp     reg, 00000079h
-        je      edu
-        cmp     reg, 00000004h
-        je      ent
-        cmp     reg, 0000001Bh
-        je      ent_n
-
-; Write edition label into edbuf via little-endian DWORD literals:
-home:   mov     [edbuf], 'emoH'
-        jmp     done
-home_sl:mov     [edbuf], 'emoH'
-        mov     [edbuf + 4], 'LS '
-        jmp     done
-home_n: mov     [edbuf], 'emoH'
-        mov     [edbuf + 4], 'N '
-        jmp     done
-pro:    mov     [edbuf], 'orP'
-        jmp     done
-pro_n:  mov     [edbuf], 'orP'
-        mov     [edbuf + 4], 'N '
-        jmp     done
-pro_edu:mov     [edbuf], 'orP'
-        mov     [edbuf + 4], 'udE '
-        jmp     done
-pro_ws: mov     [edbuf], 'orP'
-        mov     [edbuf + 4], 'SW '
-        jmp     done
-edu:    mov     [edbuf], 'edE'
-        jmp     done
-ent:    mov     [edbuf], 'tnE'
-        jmp     done
-ent_n:  mov     [edbuf], 'tnE'
-        mov     [edbuf + 4], 'N '
-        jmp     done
-done:
         ENDM
 
 ; Structure used by GetNativeSystemInfo.
@@ -171,26 +84,40 @@ RTL_OSVERSIONINFOEXW STRUCT
 RTL_OSVERSIONINFOEXW ENDS
 
         .DATA
-sysInf          SYSTEM_INFO <>              ; Allocate and zero-initialize struct.
+; System information structures (zero-initialized):
+sysInf          SYSTEM_INFO <>
 msEx            MEMORYSTATUSEX <>
 osEx            RTL_OSVERSIONINFOEXW <>
-osbuf           DWORD   MaxBuf DUP (?)      ; OS version buffer.
-edbuf           DWORD   MaxBuf DUP (?)      ; OS edition buffer.
+; Output buffers:
+tmpbuf          DWORD   MaxBuf DUP (?)      ; Temp buffer for Int2Str or general use.
 cpubuf          DWORD   MaxBuf DUP (?)      ; CPU strings buffer.
 membuf          DWORD   MaxBuf DUP (?)      ; Memory data buffer.
 timebuf         DWORD   MaxBuf DUP (?)      ; Uptime buffer.
-newln           BYTE    0Dh, 0Ah            ; CRLF
+; Operating system strings:
 os_title        BYTE    "--- Operating System ---", 0Dh, 0Ah
-os_version      BYTE    "Version : "
-os_build        BYTE    "Build   : "
+os_version      BYTE    "Version      : "
+os_edition      BYTE    "Edition      : "
+os_build        BYTE    "Build        : "
 os_error        BYTE    "Error: Unable to retrieve OS version information.", 0Dh, 0Ah
-W11_26H1        BYTE    "Windows 11 (26H1) "
-W11_25H2        BYTE    "Windows 11 (25H2) "
-W11_24H2        BYTE    "Windows 11 (24H2) "
-W11_23H2        BYTE    "Windows 11 (23H2) "
-W11_22H2        BYTE    "Windows 11 (22H2) "
-W11_21H2        BYTE    "Windows 11 (21H2) "
+w11_26H1        BYTE    "Windows 11 (26H1)"
+w11_25H2        BYTE    "Windows 11 (25H2)"
+w11_24H2        BYTE    "Windows 11 (24H2)"
+w11_23H2        BYTE    "Windows 11 (23H2)"
+w11_22H2        BYTE    "Windows 11 (22H2)"
+w11_21H2        BYTE    "Windows 11 (21H2)"
+ed_home         BYTE    "Home"
+ed_home_sl      BYTE    "Home Single Language"
+ed_home_n       BYTE    "Home N"
+ed_pro          BYTE    "Pro"
+ed_pro_n        BYTE    "Pro N"
+ed_pro_edu      BYTE    "Pro Education"
+ed_pro_ws       BYTE    "Pro for Workstations"
+ed_edu          BYTE    "Education"
+ed_ent          BYTE    "Enterprise"
+ed_ent_e        BYTE    "Enterprise E"
+ed_ent_n        BYTE    "Enterprise N"
 productType     DWORD   ?                   ; Store return value from GetProductInfo function.
+; Processor strings:
 cpu_title       BYTE    "--- Processor ---", 0Dh, 0Ah
 cpu_vendor      BYTE    "Vendor       : "
 cpu_name        BYTE    "Model        : "
@@ -201,6 +128,7 @@ cpu_arm         BYTE    "Architecture : ARM"
 cpu_arm64       BYTE    "Architecture : ARM64"
 cpu_ia64        BYTE    "Architecture : Intel Itanium"
 cpu_unknown     BYTE    "Architecture : Unknown"
+; Memory strings:
 mem_title       BYTE    "--- Memory ---", 0Dh, 0Ah
 mem_total       BYTE    "RAM Total    : "
 mem_free        BYTE    "RAM Free     : "
@@ -209,6 +137,7 @@ gibi_whole      QWORD   ?                   ; Store whole portion of RAM size.
 gibi_fract      QWORD   ?                   ; Store fractional portion of RAM size.
 gib_label       BYTE    " GiB"
 decimal_pt      BYTE    "."
+; Uptime strings:
 uptime_title    BYTE    "--- System Uptime ---", 0Dh, 0Ah
 comma_sp        BYTE    ", "
 days            QWORD   ?                   ; Uptime days value.
@@ -223,6 +152,9 @@ minute_label    BYTE    " minute"
 seconds         QWORD   ?                   ; Uptime seconds value.
 seconds_label   BYTE    " seconds"
 second_label    BYTE    " second"
+; Formatting and utility:
+unknown         BYTE    "unknown"
+newln           BYTE    0Dh, 0Ah            ; CRLF
 stdin           QWORD   ?                   ; Handle to standard input device.
 stdout          QWORD   ?                   ; Handle to standard output device.
 nbwr            DWORD   ?                   ; Number of bytes (characters) actually written.
@@ -308,6 +240,165 @@ FormatTime PROC
         ret
 FormatTime ENDP
 
+; Return pointer to version string in RAX; byte length in R8D.
+GetWinVer PROC
+        mov     osEx.dwOSVersionInfoSize, SIZEOF RTL_OSVERSIONINFOEXW
+        lea     RCX, osEx
+        call    RtlGetVersion
+
+        test    EAX, EAX                    ; 0 = success; nz = failure
+        jz      rtl_success
+        lea     RAX, unknown
+        mov     R8D, LENGTHOF unknown
+        jmp     winver_done
+
+rtl_success:
+        mov     EAX, osEx.dwBuildNumber
+        cmp     EAX, 28000
+        jae     win11_26H1
+        cmp     EAX, 26200
+        jae     win11_25H2
+        cmp     EAX, 26100
+        jae     win11_24H2
+        cmp     EAX, 22631
+        jae     win11_23H2
+        cmp     EAX, 22621
+        jae     win11_22H2
+        cmp     EAX, 22000
+        jae     win11_21H2
+
+        jmp     winver_done                 ; Prevent fall-through; this should not be reached.
+
+win11_26H1:
+        lea     RAX, w11_26H1
+        mov     R8D, LENGTHOF w11_26H1
+        jmp     winver_done
+win11_25H2:
+        lea     RAX, w11_25H2
+        mov     R8D, LENGTHOF w11_25H2
+        jmp     winver_done
+win11_24H2:
+        lea     RAX, w11_24H2
+        mov     R8D, LENGTHOF w11_24H2
+        jmp     winver_done
+win11_23H2:
+        lea     RAX, w11_23H2
+        mov     R8D, LENGTHOF w11_23H2
+        jmp     winver_done
+win11_22H2:
+        lea     RAX, w11_22H2
+        mov     R8D, LENGTHOF w11_22H2
+        jmp     winver_done
+win11_21H2:
+        lea     RAX, w11_21H2
+        mov     R8D, LENGTHOF w11_21H2
+        jmp     winver_done
+winver_done:
+        ret
+GetWinVer ENDP
+
+; Return pointer to edition string in RAX; byte length in R8D.
+GetWinEdition PROC
+        mov     ECX, osEx.dwMajorVersion
+        mov     EDX, osEx.dwMinorVersion
+        movzx   R8D, osEx.wServicePackMajor ; Copy 16-bit WORD; zero-extend to 32-bit DWORD in R8D.
+        movzx   R9D, osEx.wServicePackMinor
+        lea     RAX, productType
+        mov     [RSP + 32], RAX             ; Shadow space + 5th arg.
+        call    GetProductInfo
+
+        test    EAX, EAX                    ; nz = success; 0 = failure
+        jz      w_unknown
+
+        mov     EAX, [productType]
+        cmp     EAX, 00000065h
+        je      w_home
+        cmp     EAX, 00000064h
+        je      w_home_sl
+        cmp     EAX, 00000062h
+        je      w_home_n
+        cmp     EAX, 00000030h
+        je      w_pro
+        cmp     EAX, 00000031h
+        je      w_pro_n
+        cmp     EAX, 000000A4h
+        je      w_pro_edu
+        cmp     EAX, 000000A1h
+        je      w_pro_ws
+        cmp     EAX, 00000079h
+        je      w_edu
+        cmp     EAX, 00000004h
+        je      w_ent
+        cmp     EAX, 00000046h
+        je      w_ent_e
+        cmp     EAX, 0000001Bh
+        je      w_ent_n
+
+        jmp     w_unknown                   ; Default case if edition is not listed.
+
+w_home:
+        lea     RAX, ed_home
+        mov     R8D, LENGTHOF ed_home
+        jmp     edition_done
+w_home_sl:
+        lea     RAX, ed_home_sl
+        mov     R8D, LENGTHOF ed_home_sl
+        jmp     edition_done
+w_home_n:
+        lea     RAX, ed_home_n
+        mov     R8D, LENGTHOF ed_home_n
+        jmp     edition_done
+w_pro:
+        lea     RAX, ed_pro
+        mov     R8D, LENGTHOF ed_pro
+        jmp     edition_done
+w_pro_n:
+        lea     RAX, ed_pro_n
+        mov     R8D, LENGTHOF ed_pro_n
+        jmp     edition_done
+w_pro_edu:
+        lea     RAX, ed_pro_edu
+        mov     R8D, LENGTHOF ed_pro_edu
+        jmp     edition_done
+w_pro_ws:
+        lea     RAX, ed_pro_ws
+        mov     R8D, LENGTHOF ed_pro_ws
+        jmp     edition_done
+w_edu:
+        lea     RAX, ed_edu
+        mov     R8D, LENGTHOF ed_edu
+        jmp     edition_done
+w_ent:
+        lea     RAX, ed_ent
+        mov     R8D, LENGTHOF ed_ent
+        jmp     edition_done
+w_ent_e:
+        lea     RAX, ed_ent_e
+        mov     R8D, LENGTHOF ed_ent_e
+        jmp     edition_done
+w_ent_n:
+        lea     RAX, ed_ent_n
+        mov     R8D, LENGTHOF ed_ent_n
+        jmp     edition_done
+w_unknown:
+        lea     RAX, unknown
+        mov     R8D, LENGTHOF unknown
+edition_done:
+        ret
+GetWinEdition ENDP
+
+; Return Windows build number in RAX, length in R8D.
+GetWinBuild PROC
+        push    RDI
+
+        mov     EAX, osEx.dwBuildNumber
+        lea     RDI, tmpbuf + MaxBuf
+        call    Int2Str                     ; RAX = build number as a string; length in R8D set by Int2Str.
+
+        pop     RDI
+        ret
+GetWinBuild ENDP
+
 ; Get CPU vendor string and store it in a buffer.
 GetCpuVend PROC
         push    RBX
@@ -387,7 +478,7 @@ cores_done:
         ret
 GetCpuCores ENDP
 
-; Return CPU architecture in RAX; length in R8D.
+; Return pointer to CPU architecture in RAX; length in R8D.
 GetCpuArch PROC
         lea     RCX, sysInf
         call    GetNativeSystemInfo
@@ -427,7 +518,6 @@ is_ia64:
         mov     R8D, LENGTHOF cpu_ia64
         jmp     arch_done
 arch_done:
-
         ret
 GetCpuArch ENDP
 
@@ -443,42 +533,20 @@ main    PROC
         StrOut  newln, LENGTHOF newln
         StrOut  os_title, LENGTHOF os_title
 
-        mov     osEx.dwOSVersionInfoSize, SIZEOF RTL_OSVERSIONINFOEXW
-        lea     RCX, osEx
-        call    RtlGetVersion
-        test    EAX, EAX                    ; 0 = success; nz = failure
-        jz      rtl_success
-        StrOut  os_error, LENGTHOF os_error
-        jmp     rtl_fail
-
-rtl_success:
-        ; Set values for GetProductInfo
-        mov     ECX, osEx.dwMajorVersion
-        mov     EDX, osEx.dwMinorVersion
-        movzx   R8D, osEx.wServicePackMajor ; Copy 16-bit WORD; zero-extend to 32-bit DWORD in R8D.
-        movzx   R9D, osEx.wServicePackMinor
-        lea     RAX, productType
-        mov     [RSP + 32], RAX             ; Shadow space + 5th arg.
-        call    GetProductInfo
-
-        mov     EAX, [productType]
-        GetEdi  EAX
-
-        ; Version string:
         StrOut  os_version, LENGTHOF os_version
-        mov     EAX, osEx.dwBuildNumber
-        VerOut  EAX
-        StrOut  edbuf, LENGTHOF edbuf
-        StrOut  newln, LENGTHOF newln
-
-        ; Build number:
-        StrOut  os_build, LENGTHOF os_build
-        mov     EAX, osEx.dwBuildNumber
-        lea     RDI, osbuf + MaxBuf         ; Destination buffer + end position.
-        call    Int2Str
+        call    GetWinVer
         StrOut  RAX, R8D
         StrOut  newln, LENGTHOF newln
-rtl_fail:
+
+        StrOut  os_edition, LENGTHOF os_edition
+        call    GetWinEdition
+        StrOut  RAX, R8D
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  os_build, LENGTHOF os_build
+        call    GetWinBuild
+        StrOut  RAX, R8D
+        StrOut  newln, LENGTHOF newln
 
 ;       Processor section:
         StrOut  newln, LENGTHOF newln
