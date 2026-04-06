@@ -91,8 +91,8 @@ osEx            RTL_OSVERSIONINFOEXW <>
 ; Output buffers:
 tmpbuf          DWORD   MaxBuf DUP (?)      ; Temp buffer for Int2Str or general use.
 cpubuf          DWORD   MaxBuf DUP (?)      ; CPU strings buffer.
-membuf          QWORD   MaxBuf DUP (?)      ; Memory data buffer.
-timebuf         DWORD   MaxBuf DUP (?)      ; Uptime buffer.
+membuf          DWORD   MaxBuf DUP (?)      ; Memory data buffer.
+timebuf         DWORD   MaxBuf DUP (?)      ; Uptime string buffer.
 ; Operating system strings:
 os_title        BYTE    "--- Operating System ---", 0Dh, 0Ah
 os_version      BYTE    "Version      : "
