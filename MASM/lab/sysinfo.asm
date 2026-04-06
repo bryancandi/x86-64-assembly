@@ -767,7 +767,6 @@ main    PROC
         call    PrintFormatUptime
         StrOut  newln, LENGTHOF newln
 
-exit:
         xor     RCX, RCX
         call    ExitProcess
 main    ENDP
