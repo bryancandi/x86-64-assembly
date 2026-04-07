@@ -18,9 +18,10 @@ GetTickCount64          PROTO
 RtlGetVersion           PROTO :PTR RTL_OSVERSIONINFOEXW
 GetProductInfo          PROTO :DWORD, :DWORD, :DWORD, :DWORD, :PTR DWORD
 GetNativeSystemInfo     PROTO :PTR SYSTEM_INFO
+GetComputerNameA        PROTO :PTR BYTE, :PTR DWORD
 
 STD_OUTPUT_HANDLE EQU   -11                 ; Device code for console output.
-MaxBuf            EQU   100
+MaxBuf            EQU   256
 BytesPerGib       EQU   1024 * 1024 * 1024
 MsPerSecond       EQU   1000
 SecPerDay         EQU   86400
@@ -116,6 +117,9 @@ ed_ent          BYTE    "Enterprise"
 ed_ent_e        BYTE    "Enterprise E"
 ed_ent_n        BYTE    "Enterprise N"
 productType     DWORD   ?                   ; Store return value from GetProductInfo function.
+comp_name       BYTE    "Host         : "
+compNameBuf     BYTE    MaxBuf DUP (0)
+compNameSize    DWORD   MaxBuf
 ; Processor strings:
 cpu_title       BYTE    "--- Processor ---", 0Dh, 0Ah
 cpu_vendor      BYTE    "Vendor       : "
@@ -390,6 +394,27 @@ GetWinBuild PROC
         mov     EAX, osEx.dwBuildNumber
         ret
 GetWinBuild ENDP
+
+; Return pointer to computer name string in RAX; byte length in R8D.
+GetComputerNameStr PROC
+        mov     compNameSize, MaxBuf
+
+        lea     RCX, compNameBuf            ; Buffer for GetComputerNameA to write to.
+        lea     RDX, compNameSize           ; Bytes written to buffer.
+        call    GetComputerNameA
+
+        test    EAX, EAX                    ; nz = success; 0 = failure
+        jz      cname_fail
+
+        lea     RAX, compNameBuf
+        mov     R8D, compNameSize
+        ret
+
+cname_fail:
+        lea     RAX, unknown
+        mov     R8D, LENGTHOF unknown
+        ret
+GetComputerNameStr ENDP
 
 ; Get CPU vendor string and store it in a buffer.
 GetCpuVend PROC
@@ -698,6 +723,11 @@ main    PROC
         call    GetWinBuild
         lea     RDI, tmpbuf + MaxBuf
         call    Int2Str
+        StrOut  RAX, R8D
+        StrOut  newln, LENGTHOF newln
+
+        StrOut  comp_name, LENGTHOF comp_name
+        call    GetComputerNameStr
         StrOut  RAX, R8D
         StrOut  newln, LENGTHOF newln
 
