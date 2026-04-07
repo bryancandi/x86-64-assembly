@@ -5,6 +5,11 @@
 ;
 ; Assemble with MASM and link:
 ; ml64.exe sysinfo.asm /link /SUBSYSTEM:console /ENTRY:main
+;
+; NOTE:
+; LEGACY - This is the final version of the lab sysinfo program.
+; Development has moved to the standalone project "asmfetch".
+; This file is no longer maintained.
 ;====================================================================
 
 INCLUDELIB kernel32.lib                     ; Win32 API functions.
