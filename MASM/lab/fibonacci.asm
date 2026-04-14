@@ -24,7 +24,7 @@ MaxVal              EQU 25
 msg     BYTE    "Enter a number (1 - 25): "
 zero    BYTE    "0"
 newln   BYTE    0Dh, 0Ah
-inbuf   BYTE    BufSiz DUP (?)
+buffer  BYTE    BufSiz DUP (?)
 stdin   QWORD   ?
 stdout  QWORD   ?
 nbrd    DWORD   ?
@@ -33,9 +33,11 @@ nbwr    DWORD   ?
         .CODE
 Int2Str PROC
         push    RBX
+        push    RDI
 
         mov     RBX, 10                     ; Divisor (10)
-        xor     R8D, R8D                    ; Initial string length = 0
+        xor     R10, R10                    ; Initial string length = 0
+        lea     RDI, buffer+BufSiz          ; RDI points to end of buffer.
 
 convert_loop:
         xor     RDX, RDX
@@ -43,12 +45,13 @@ convert_loop:
         add     DL, '0'                     ; Remainder to ASCII digit.
         dec     RDI
         mov     [RDI], DL                   ; Store digit.
-        inc     R8D                         ; Length++
+        inc     R10                         ; Length++
         test    RAX, RAX
         jnz     convert_loop
 
         mov     RAX, RDI                    ; Return pointer to first digit.
 
+        pop     RDI
         pop     RBX
         ret
 Int2Str ENDP
@@ -72,7 +75,7 @@ prompt_loop:
         call    WriteConsoleA
 
         mov     RCX, stdin
-        lea     RDX, inbuf
+        lea     RDX, buffer
         mov     R8, BufSiz
         lea     R9, nbrd
         call    ReadConsoleA
@@ -83,7 +86,7 @@ prompt_loop:
         cmp     R8D, 4                      ; 4 = CRLF + 2 digits
         ja      prompt_loop
 
-        movzx   RAX, BYTE PTR [inbuf]
+        movzx   RAX, BYTE PTR [buffer]
         sub     RAX, '0'
         cmp     RAX, MinVal
         jl      prompt_loop
@@ -91,7 +94,7 @@ prompt_loop:
         cmp     R8D, 3                      ; 3 = CRLF + 1 digit
         je      continue
         imul    RAX, RAX, 10
-        movzx   RDX, BYTE PTR [inbuf+1]
+        movzx   RDX, BYTE PTR [buffer+1]
         sub     RDX, '0'
         add     RAX, RDX
         cmp     RAX, MaxVal
@@ -103,13 +106,13 @@ continue:
 
         mov     RCX, stdout
         lea     RDX, zero
-        mov     R8D, LENGTHOF zero
+        mov     R8, LENGTHOF zero
         lea     R9, nbwr
         call    WriteConsoleA
 
         mov     RCX, stdout
         lea     RDX, newln
-        mov     R8D, LENGTHOF newln
+        mov     R8, LENGTHOF newln
         lea     R9, nbwr
         call    WriteConsoleA
 
@@ -130,11 +133,10 @@ fib_loop:
         push    R10
         push    R11
 
-        lea     RDI, inbuf+BufSiz
         call    Int2Str
         mov     RCX, stdout
         mov     RDX, RAX
-        mov     R8D, R8D
+        mov     R8, R10
         lea     R9, nbwr
         call    WriteConsoleA
 
