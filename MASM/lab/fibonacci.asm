@@ -11,7 +11,7 @@ INCLUDELIB kernel32.lib
 
 ExitProcess         PROTO
 GetStdHandle        PROTO
-ReadConsoleA        PROTO
+ReadFile            PROTO
 WriteConsoleA       PROTO
 
 STD_INPUT_HANDLE    EQU -10
@@ -78,7 +78,7 @@ prompt_loop:
         lea     RDX, buffer
         mov     R8, BufSiz
         lea     R9, nbrd
-        call    ReadConsoleA
+        call    ReadFile
 
         mov     R8D, [nbrd]
         cmp     R8D, 2                      ; 2 = CRLF
