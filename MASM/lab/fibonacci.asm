@@ -1,5 +1,5 @@
 ;==============================================================
-; Print Fibonacci sequence up to Fn (1-25).
+; Print Fibonacci sequence up to Fn (1-93).
 ; Author: Bryan C.
 ; Date  : 2026-04-14
 ;
@@ -18,10 +18,10 @@ STD_INPUT_HANDLE    EQU -10
 STD_OUTPUT_HANDLE   EQU -11
 BufSiz              EQU 256
 MinVal              EQU 1
-MaxVal              EQU 25
+MaxVal              EQU 93
 
         .DATA
-msg     BYTE    "Enter a number (1 - 25): "
+msg     BYTE    "Enter a number (1 - 93): "
 zero    BYTE    "0"
 newln   BYTE    0Dh, 0Ah
 buffer  BYTE    BufSiz DUP (?)
