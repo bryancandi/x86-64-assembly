@@ -1,5 +1,5 @@
 ;==============================================================
-; Print Fibonacci sequence up to Fn (1-93).
+; Print Fibonacci sequence up to Fn (0-93).
 ; Author: Bryan C.
 ; Date  : 2026-04-14
 ;
@@ -17,12 +17,11 @@ WriteConsoleA       PROTO
 STD_INPUT_HANDLE    EQU -10
 STD_OUTPUT_HANDLE   EQU -11
 BufSiz              EQU 256
-MinVal              EQU 1
+MinVal              EQU 0
 MaxVal              EQU 93
 
         .DATA
-msg     BYTE    "Enter a number (1 - 93): "
-zero    BYTE    "0"
+msg     BYTE    "Enter a number (0 - 93): "
 newln   BYTE    0Dh, 0Ah
 buffer  BYTE    BufSiz DUP (?)
 stdin   QWORD   ?
@@ -101,37 +100,15 @@ prompt_loop:
         jg      prompt_loop
 
 continue:
-        push    RAX
-        push    RCX
+        mov     R12, RAX                    ; Save initial value of RAX (Fn)
+        xor     R13, R13                    ; Counter = 0
 
-        mov     RCX, stdout
-        lea     RDX, zero
-        mov     R8, LENGTHOF zero
-        lea     R9, nbwr
-        call    WriteConsoleA
-
-        mov     RCX, stdout
-        lea     RDX, newln
-        mov     R8, LENGTHOF newln
-        lea     R9, nbwr
-        call    WriteConsoleA
-
-        pop     RCX
-        pop     RAX
-
-        mov     R10, RAX                    ; Save value of RAX (Fn)
-        xor     R11, R11                    ; Counter
-
-        mov     RAX, 0
+        mov     RAX, 0                      ; Initial values for Fibonacci in RAX and RCX.
         mov     RCX, 1
 
 fib_loop:
-        xadd    RAX, RCX                    ; RCX = RAX, RAX = RAX + RCX
-
         push    RAX
         push    RCX
-        push    R10
-        push    R11
 
         call    Int2Str
         mov     RCX, stdout
@@ -146,15 +123,20 @@ fib_loop:
         lea     R9, nbwr
         call    WriteConsoleA
 
-        pop     R11
-        pop     R10
         pop     RCX
         pop     RAX
 
-        inc     R11                         ; Counter++
-        cmp     R10, R11
-        jne     fib_loop
+        test    R12, R12                    ; Was initial value 0?
+        jz      exit                        ; Yes, exit.
 
+        cmp     R13, R12                    ; Done iterating?
+        je      exit                        ; Yes, exit.
+
+        xadd    RAX, RCX                    ; RCX = RAX, RAX = RAX + RCX
+        inc     R13                         ; Counter++
+        jmp     fib_loop
+
+exit:
         xor     RCX, RCX
         call    ExitProcess
 main    ENDP
