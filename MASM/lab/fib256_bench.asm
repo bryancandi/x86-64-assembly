@@ -37,17 +37,17 @@ main    PROC
         xor     R11, R11
 
 fib_loop:
-        mov     R12, RAX                    ; Temp store initial values of F0 registers
+        mov     R12, RAX                    ; Store initial values of F0 registers
         mov     R13, RBX
         mov     R14, RCX
         mov     R15, RDX
 
-        add     RAX, R8                     ; Add low 64-bits (clears CF)
-        adc     RBX, R9                     ; + CF
-        adc     RCX, R10                    ; + CF
+        add     RAX, R8                     ; Low 64-bits (sets CF)
+        adc     RBX, R9                     ; Next 64-bits + CF
+        adc     RCX, R10                    ; Next 64-bits + CF
         adc     RDX, R11                    ; High 64-bits + CF
 
-        mov     R8, R12                     ; Restore initial values of F0 to F1 registers
+        mov     R8, R12                     ; Shift previous F0 into F1 registers
         mov     R9, R13
         mov     R10, R14
         mov     R11, R15
@@ -55,7 +55,6 @@ fib_loop:
         dec     RDI                         ; Counter--
         jnz     fib_loop
 
-exit:
         xor     RCX, RCX
         call    ExitProcess
 main    ENDP
