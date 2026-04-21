@@ -1,5 +1,7 @@
 ;==============================================================
-; Print Fibonacci sequence up to Fn (0-93).
+; Print Fibonacci sequence up to Fn.
+; Maximum n=93 due to 64-bit unsigned integer capacity.
+;
 ; Author: Bryan C.
 ; Date  : 2026-04-14
 ;
@@ -92,10 +94,12 @@ prompt_loop:
 
         cmp     R8D, 3                      ; 3 = CRLF + 1 digit
         je      continue
+
         imul    RAX, RAX, 10
         movzx   RDX, BYTE PTR [buffer+1]
         sub     RDX, '0'
         add     RAX, RDX
+
         cmp     RAX, MaxVal
         jg      prompt_loop
 
