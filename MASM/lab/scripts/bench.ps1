@@ -4,7 +4,7 @@ $runs = 100
 $seqs = 370
 
 for ($i = 1; $i -le $runs; $i++) {
-    $seqs | .\fibonacci256.exe > $null
+    $seqs | ..\fibonacci256.exe > $null
 }
 
 $sw.Stop()
