@@ -1,7 +1,7 @@
 ;==============================================================
 ; Print Fibonacci sequence up to Fn.
 ; Range: n=0 to n=370
-; Logic: 256-bit unsigned arithmetic using 4x64-bit registers.
+; 256-bit unsigned addition using ADC (Add with Carry) logic.
 ;
 ; Author: Bryan C.
 ; Date  : 2026-04-20

@@ -1,5 +1,6 @@
 ;==============================================================
-; 256-bit Fibonacci benchmark (no printing)
+; Calculate Fibonacci sequence up to F370 in registers.
+; 256-bit Fibonacci benchmark (no I/O overhead).
 ;
 ; Author: Bryan C.
 ; Date  : 2026-04-21

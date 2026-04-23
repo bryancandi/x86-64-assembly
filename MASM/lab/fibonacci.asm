@@ -1,6 +1,7 @@
 ;==============================================================
 ; Print Fibonacci sequence up to Fn.
-; Maximum n=93 due to 64-bit unsigned integer capacity.
+; Range: n=0 to n=93
+; 64-bit unsigned addition using XADD (Exchange and Add).
 ;
 ; Author: Bryan C.
 ; Date  : 2026-04-14
