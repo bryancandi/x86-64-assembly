@@ -20,22 +20,22 @@ nbwr    DWORD   ?                           ; Number of bytes actually written.
 
         .CODE
 main    PROC
-        sub     RSP, 40                     ; Reserve "shadow space" on stack for 4 args (32 shadow + 8 alignment).
+        sub     rsp, 40                     ; Reserve "shadow space" on stack for 4 args (32 shadow + 8 alignment).
 
 ;       Obtain "handle" for console display.
-        mov     RCX, Console                ; Console device code, to be passed to GetStdHandle.
+        mov     rcx, Console                ; Console device code, to be passed to GetStdHandle.
         call    GetStdHandle                ; Receive the console output handle.
-        mov     [stdout], RAX               ; Store the handle for console output.
+        mov     [stdout], rax               ; Store the handle for console output.
 
 ;       Print to console.
-        mov     RCX, [stdout]               ; Arg 1: device handle.
-        lea     RDX, txt                    ; Arg 2: pointer to byte array.
-        mov     R8, LENGTHOF txt            ; Arg 3: number of characters to write (array length).
-        lea     R9, nbwr                    ; Arg 4: pointer to variable to contain number of bytes written.
+        mov     rcx, [stdout]               ; Arg 1: device handle.
+        lea     rdx, txt                    ; Arg 2: pointer to byte array.
+        mov     r8, LENGTHOF txt            ; Arg 3: number of characters to write (array length).
+        lea     r9, nbwr                    ; Arg 4: pointer to variable to contain number of bytes written.
         call    WriteConsoleA               ; Function call to write text to console.
 
 ;       Program exit.
-        xor     RCX, RCX                    ; Set exit status code to zero.
+        xor     rcx, rcx                    ; Set exit status code to zero.
         call    ExitProcess                 ; Call the ExitProcess function to exit the program.
 main    ENDP
         END

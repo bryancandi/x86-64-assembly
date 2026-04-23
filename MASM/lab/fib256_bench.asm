@@ -20,43 +20,43 @@ Fn              EQU 370
 
         .CODE
 main    PROC
-        sub     RSP, 40
+        sub     rsp, 40
 
-        mov     RDI, Fn                     ; RDI = counter
+        mov     rdi, Fn                     ; RDI = counter
 
         ; Initial Fibonacci values each in four 64-bit registers (up to 256-bit integers)
         ; F0 = 0 (RAX:RBX:RCX:RDX)
         ; F1 = 1 (R8:R9:R10:R11)
-        xor     RAX, RAX
-        xor     RBX, RBX
-        xor     RCX, RCX
-        xor     RDX, RDX
+        xor     rax, rax
+        xor     rbx, rbx
+        xor     rcx, rcx
+        xor     rdx, rdx
 
-        mov     R8, 1
-        xor     R9, R9
-        xor     R10, R10
-        xor     R11, R11
+        mov     r8, 1
+        xor     r9, r9
+        xor     r10, r10
+        xor     r11, r11
 
 fib_loop:
-        mov     R12, RAX                    ; Store initial values of F0 registers
-        mov     R13, RBX
-        mov     R14, RCX
-        mov     R15, RDX
+        mov     r12, rax                    ; Store initial values of F0 registers
+        mov     r13, rbx
+        mov     r14, rcx
+        mov     r15, rdx
 
-        add     RAX, R8                     ; Low 64-bits (sets CF)
-        adc     RBX, R9                     ; Next 64-bits + CF
-        adc     RCX, R10                    ; Next 64-bits + CF
-        adc     RDX, R11                    ; High 64-bits + CF
+        add     rax, r8                     ; Low 64-bits (sets CF)
+        adc     rbx, r9                     ; Next 64-bits + CF
+        adc     rcx, r10                    ; Next 64-bits + CF
+        adc     rdx, r11                    ; High 64-bits + CF
 
-        mov     R8, R12                     ; Shift previous F0 into F1 registers
-        mov     R9, R13
-        mov     R10, R14
-        mov     R11, R15
+        mov     r8, r12                     ; Shift previous F0 into F1 registers
+        mov     r9, r13
+        mov     r10, r14
+        mov     r11, r15
 
-        dec     RDI                         ; Counter--
+        dec     rdi                         ; Counter--
         jnz     fib_loop
 
-        xor     RCX, RCX
+        xor     rcx, rcx
         call    ExitProcess
 main    ENDP
         END

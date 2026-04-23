@@ -34,187 +34,187 @@ nbwr    DWORD   ?
 
         .CODE
 Int256S PROC
-        push    RBX
-        push    RDI
-        push    R12
-        push    R13
-        push    R14
-        push    R15
+        push    rbx
+        push    rdi
+        push    r12
+        push    r13
+        push    r14
+        push    r15
 
-        mov     R12, RAX
-        mov     R13, RBX
-        mov     R14, RCX
-        mov     R15, RDX
+        mov     r12, rax
+        mov     r13, rbx
+        mov     r14, rcx
+        mov     r15, rdx
 
-        mov     RBX, 10                     ; Divisor (10)
-        xor     R10, R10                    ; Initial string length = 0
-        lea     RDI, buffer+BufSiz          ; RDI points to end of buffer
+        mov     rbx, 10                     ; Divisor (10)
+        xor     r10, r10                    ; Initial string length = 0
+        lea     rdi, buffer+BufSiz          ; RDI points to end of buffer
 
 convert_loop:
-        xor     RDX, RDX                    ; Clear remainder
-        mov     RAX, R15                    ; High 64-bits
-        div     RBX                         ; RAX = quotient, RDX = remainder
-        mov     R15, RAX                    ; R15 = new quotient
+        xor     rdx, rdx                    ; Clear remainder
+        mov     rax, r15                    ; High 64-bits
+        div     rbx                         ; RAX = quotient, RDX = remainder
+        mov     r15, rax                    ; R15 = new quotient
 
-        mov     RAX, R14                    ; Next 64-bits
-        div     RBX
-        mov     R14, RAX
+        mov     rax, r14                    ; Next 64-bits
+        div     rbx
+        mov     r14, rax
 
-        mov     RAX, R13                    ; Next 64-bits
-        div     RBX
-        mov     R13, RAX
+        mov     rax, r13                    ; Next 64-bits
+        div     rbx
+        mov     r13, rax
 
-        mov     RAX, R12                    ; Low 64-bits
-        div     RBX
-        mov     R12, RAX
+        mov     rax, r12                    ; Low 64-bits
+        div     rbx
+        mov     r12, rax
 
-        add     DL, '0'                     ; Remainder to ASCII digit.
-        dec     RDI
-        mov     [RDI], DL                   ; Store digit.
-        inc     R10                         ; Length++
+        add     dl, '0'                     ; Remainder to ASCII digit.
+        dec     rdi
+        mov     [rdi], dl                   ; Store digit.
+        inc     r10                         ; Length++
 
-        mov     RAX, R15                    ; All quotients zero?
-        or      RAX, R14
-        or      RAX, R13
-        or      RAX, R12
+        mov     rax, r15                    ; All quotients zero?
+        or      rax, r14
+        or      rax, r13
+        or      rax, r12
         jnz     convert_loop                ; No, jump to loop start
 
-        mov     RAX, RDI                    ; Return pointer to first digit
+        mov     rax, rdi                    ; Return pointer to first digit
 
-        pop     R15
-        pop     R14
-        pop     R13
-        pop     R12
-        pop     RDI
-        pop     RBX
+        pop     r15
+        pop     r14
+        pop     r13
+        pop     r12
+        pop     rdi
+        pop     rbx
         ret
 Int256S ENDP
 
 main    PROC
-        sub     RSP, 40
+        sub     rsp, 40
 
-        mov     RCX, STD_INPUT_HANDLE
+        mov     rcx, STD_INPUT_HANDLE
         call    GetStdHandle
-        mov     [stdin], RAX
+        mov     [stdin], rax
 
-        mov     RCX, STD_OUTPUT_HANDLE
+        mov     rcx, STD_OUTPUT_HANDLE
         call    GetStdHandle
-        mov     [stdout], RAX
+        mov     [stdout], rax
 
 prompt_loop:
-        mov     RCX, [stdout]
-        lea     RDX, msg
-        mov     R8, LENGTHOF msg
-        lea     R9, nbwr
+        mov     rcx, [stdout]
+        lea     rdx, msg
+        mov     r8, LENGTHOF msg
+        lea     r9, nbwr
         call    WriteConsoleA
 
-        mov     RCX, [stdin]
-        lea     RDX, buffer
-        mov     R8, BufSiz
-        lea     R9, nbrd
+        mov     rcx, [stdin]
+        lea     rdx, buffer
+        mov     r8, BufSiz
+        lea     r9, nbrd
         call    ReadFile
 
-        mov     R8D, [nbrd]
-        cmp     R8D, 2                      ; 2 = CRLF
+        mov     r8d, [nbrd]
+        cmp     r8d, 2                      ; 2 = CRLF
         je      prompt_loop
-        cmp     R8D, 5                      ; 5 = CRLF + 3 digits
+        cmp     r8d, 5                      ; 5 = CRLF + 3 digits
         ja      prompt_loop
 
-        movzx   RAX, BYTE PTR [buffer]
-        sub     RAX, '0'
-        cmp     RAX, MinVal
+        movzx   rax, BYTE PTR [buffer]
+        sub     rax, '0'
+        cmp     rax, MinVal
         jl      prompt_loop
 
-        cmp     R8D, 3                      ; 3 = CRLF + 1 digit
+        cmp     r8d, 3                      ; 3 = CRLF + 1 digit
         je      continue
 
-        imul    RAX, RAX, 10
-        movzx   RDX, BYTE PTR [buffer+1]
-        sub     RDX, '0'
-        add     RAX, RDX
+        imul    rax, rax, 10
+        movzx   rdx, BYTE PTR [buffer+1]
+        sub     rdx, '0'
+        add     rax, rdx
 
-        cmp     R8D, 4                      ; 4 = CRLF + 2 digits
+        cmp     r8d, 4                      ; 4 = CRLF + 2 digits
         je      continue
 
-        imul    RAX, RAX, 10
-        movzx   RDX, BYTE PTR [buffer+2]
-        sub     RDX, '0'
-        add     RAX, RDX
+        imul    rax, rax, 10
+        movzx   rdx, BYTE PTR [buffer+2]
+        sub     rdx, '0'
+        add     rax, rdx
 
-        cmp     RAX, MaxVal
+        cmp     rax, MaxVal
         jg      prompt_loop
 
 continue:
-        mov     RDI, RAX                    ; RDI = counter (initial value of Fn)
+        mov     rdi, rax                    ; RDI = counter (initial value of Fn)
 
         ; Initial Fibonacci values each in four 64-bit registers (up to 256-bit integers)
         ; F0 = 0 (RAX:RBX:RCX:RDX)
         ; F1 = 1 (R8:R9:R10:R11)
-        xor     RAX, RAX
-        xor     RBX, RBX
-        xor     RCX, RCX
-        xor     RDX, RDX
+        xor     rax, rax
+        xor     rbx, rbx
+        xor     rcx, rcx
+        xor     rdx, rdx
 
-        mov     R8, 1
-        xor     R9, R9
-        xor     R10, R10
-        xor     R11, R11
+        mov     r8, 1
+        xor     r9, r9
+        xor     r10, r10
+        xor     r11, r11
 
 fib_loop:
-        push    RAX
-        push    RBX
-        push    RCX
-        push    RDX
-        push    R8
-        push    R9
-        push    R10
-        push    R11
+        push    rax
+        push    rbx
+        push    rcx
+        push    rdx
+        push    r8
+        push    r9
+        push    r10
+        push    r11
 
         call    Int256S
-        mov     RCX, [stdout]
-        mov     RDX, RAX
-        mov     R8, R10
-        lea     R9, nbwr
+        mov     rcx, [stdout]
+        mov     rdx, rax
+        mov     r8, r10
+        lea     r9, nbwr
         call    WriteConsoleA
 
-        mov     RCX, [stdout]
-        lea     RDX, newln
-        mov     R8D, LENGTHOF newln
-        lea     R9, nbwr
+        mov     rcx, [stdout]
+        lea     rdx, newln
+        mov     r8d, LENGTHOF newln
+        lea     r9, nbwr
         call    WriteConsoleA
 
-        pop     R11
-        pop     R10
-        pop     R9
-        pop     R8
-        pop     RDX
-        pop     RCX
-        pop     RBX
-        pop     RAX
+        pop     r11
+        pop     r10
+        pop     r9
+        pop     r8
+        pop     rdx
+        pop     rcx
+        pop     rbx
+        pop     rax
 
-        test    RDI, RDI                    ; Was initial value 0?
+        test    rdi, rdi                    ; Was initial value 0?
         jz      exit                        ; Yes, exit
 
-        mov     R12, RAX                    ; Store initial values of F0 registers
-        mov     R13, RBX
-        mov     R14, RCX
-        mov     R15, RDX
+        mov     r12, rax                    ; Store initial values of F0 registers
+        mov     r13, rbx
+        mov     r14, rcx
+        mov     r15, rdx
 
-        add     RAX, R8                     ; Low 64-bits (sets CF)
-        adc     RBX, R9                     ; Next 64-bits + CF
-        adc     RCX, R10                    ; Next 64-bits + CF
-        adc     RDX, R11                    ; High 64-bits + CF
+        add     rax, r8                     ; Low 64-bits (sets CF)
+        adc     rbx, r9                     ; Next 64-bits + CF
+        adc     rcx, r10                    ; Next 64-bits + CF
+        adc     rdx, r11                    ; High 64-bits + CF
 
-        mov     R8, R12                     ; Shift previous F0 into F1 registers
-        mov     R9, R13
-        mov     R10, R14
-        mov     R11, R15
+        mov     r8, r12                     ; Shift previous F0 into F1 registers
+        mov     r9, r13
+        mov     r10, r14
+        mov     r11, r15
 
-        dec     RDI                         ; Counter--
+        dec     rdi                         ; Counter--
         jmp     fib_loop
 
 exit:
-        xor     RCX, RCX
+        xor     rcx, rcx
         call    ExitProcess
 main    ENDP
         END

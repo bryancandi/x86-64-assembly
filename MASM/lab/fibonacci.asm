@@ -34,115 +34,115 @@ nbwr    DWORD   ?
 
         .CODE
 Int2Str PROC
-        push    RBX
-        push    RDI
+        push    rbx
+        push    rdi
 
-        mov     RBX, 10                     ; Divisor (10)
-        xor     R10, R10                    ; Initial string length = 0
-        lea     RDI, buffer+BufSiz          ; RDI points to end of buffer.
+        mov     rbx, 10                     ; Divisor (10)
+        xor     r10, r10                    ; Initial string length = 0
+        lea     rdi, buffer+BufSiz          ; RDI points to end of buffer.
 
 convert_loop:
-        xor     RDX, RDX
-        div     RBX                         ; RAX = quotient, RDX = remainder.
-        add     DL, '0'                     ; Remainder to ASCII digit.
-        dec     RDI
-        mov     [RDI], DL                   ; Store digit.
-        inc     R10                         ; Length++
-        test    RAX, RAX
+        xor     rdx, rdx
+        div     rbx                         ; RAX = quotient, RDX = remainder.
+        add     dl, '0'                     ; Remainder to ASCII digit.
+        dec     rdi
+        mov     [rdi], dl                   ; Store digit.
+        inc     r10                         ; Length++
+        test    rax, rax
         jnz     convert_loop
 
-        mov     RAX, RDI                    ; Return pointer to first digit.
+        mov     rax, rdi                    ; Return pointer to first digit.
 
-        pop     RDI
-        pop     RBX
+        pop     rdi
+        pop     rbx
         ret
 Int2Str ENDP
 
 main    PROC
-        sub     RSP, 40
+        sub     rsp, 40
 
-        mov     RCX, STD_INPUT_HANDLE
+        mov     rcx, STD_INPUT_HANDLE
         call    GetStdHandle
-        mov     [stdin], RAX
+        mov     [stdin], rax
 
-        mov     RCX, STD_OUTPUT_HANDLE
+        mov     rcx, STD_OUTPUT_HANDLE
         call    GetStdHandle
-        mov     [stdout], RAX
+        mov     [stdout], rax
 
 prompt_loop:
-        mov     RCX, [stdout]
-        lea     RDX, msg
-        mov     R8, LENGTHOF msg
-        lea     R9, nbwr
+        mov     rcx, [stdout]
+        lea     rdx, msg
+        mov     r8, LENGTHOF msg
+        lea     r9, nbwr
         call    WriteConsoleA
 
-        mov     RCX, [stdin]
-        lea     RDX, buffer
-        mov     R8, BufSiz
-        lea     R9, nbrd
+        mov     rcx, [stdin]
+        lea     rdx, buffer
+        mov     r8, BufSiz
+        lea     r9, nbrd
         call    ReadFile
 
-        mov     R8D, [nbrd]
-        cmp     R8D, 2                      ; 2 = CRLF
+        mov     r8d, [nbrd]
+        cmp     r8d, 2                      ; 2 = CRLF
         je      prompt_loop
-        cmp     R8D, 4                      ; 4 = CRLF + 2 digits
+        cmp     r8d, 4                      ; 4 = CRLF + 2 digits
         ja      prompt_loop
 
-        movzx   RAX, BYTE PTR [buffer]
-        sub     RAX, '0'
-        cmp     RAX, MinVal
+        movzx   rax, BYTE PTR [buffer]
+        sub     rax, '0'
+        cmp     rax, MinVal
         jl      prompt_loop
 
-        cmp     R8D, 3                      ; 3 = CRLF + 1 digit
+        cmp     r8d, 3                      ; 3 = CRLF + 1 digit
         je      continue
 
-        imul    RAX, RAX, 10
-        movzx   RDX, BYTE PTR [buffer+1]
-        sub     RDX, '0'
-        add     RAX, RDX
+        imul    rax, rax, 10
+        movzx   rdx, BYTE PTR [buffer+1]
+        sub     rdx, '0'
+        add     rax, rdx
 
-        cmp     RAX, MaxVal
+        cmp     rax, MaxVal
         jg      prompt_loop
 
 continue:
-        mov     R12, RAX                    ; Save initial value of RAX (Fn)
-        xor     R13, R13                    ; Counter = 0
+        mov     r12, rax                    ; Save initial value of RAX (Fn)
+        xor     r13, r13                    ; Counter = 0
 
-        mov     RAX, 0                      ; Initial values for Fibonacci in RAX and RCX.
-        mov     RCX, 1
+        mov     rax, 0                      ; Initial values for Fibonacci in RAX and RCX.
+        mov     rcx, 1
 
 fib_loop:
-        push    RAX
-        push    RCX
+        push    rax
+        push    rcx
 
         call    Int2Str
-        mov     RCX, [stdout]
-        mov     RDX, RAX
-        mov     R8, R10
-        lea     R9, nbwr
+        mov     rcx, [stdout]
+        mov     rdx, rax
+        mov     r8, r10
+        lea     r9, nbwr
         call    WriteConsoleA
 
-        mov     RCX, [stdout]
-        lea     RDX, newln
-        mov     R8D, LENGTHOF newln
-        lea     R9, nbwr
+        mov     rcx, [stdout]
+        lea     rdx, newln
+        mov     r8d, LENGTHOF newln
+        lea     r9, nbwr
         call    WriteConsoleA
 
-        pop     RCX
-        pop     RAX
+        pop     rcx
+        pop     rax
 
-        test    R12, R12                    ; Was initial value 0?
+        test    r12, r12                    ; Was initial value 0?
         jz      exit                        ; Yes, exit.
 
-        cmp     R13, R12                    ; Done iterating?
+        cmp     r13, r12                    ; Done iterating?
         je      exit                        ; Yes, exit.
 
-        xadd    RAX, RCX                    ; RCX = RAX, RAX = RAX + RCX
-        inc     R13                         ; Counter++
+        xadd    rax, rcx                    ; RCX = RAX, RAX = RAX + RCX
+        inc     r13                         ; Counter++
         jmp     fib_loop
 
 exit:
-        xor     RCX, RCX
+        xor     rcx, rcx
         call    ExitProcess
 main    ENDP
         END
