@@ -25,10 +25,10 @@ main    PROC
 ;       Obtain "handle" for console display.
         mov     RCX, Console                ; Console device code, to be passed to GetStdHandle.
         call    GetStdHandle                ; Receive the console output handle.
-        mov     stdout, RAX                 ; Store the handle for console output.
+        mov     [stdout], RAX               ; Store the handle for console output.
 
 ;       Print to console.
-        mov     RCX, stdout                 ; Arg 1: device handle.
+        mov     RCX, [stdout]               ; Arg 1: device handle.
         lea     RDX, txt                    ; Arg 2: pointer to byte array.
         mov     R8, LENGTHOF txt            ; Arg 3: number of characters to write (array length).
         lea     R9, nbwr                    ; Arg 4: pointer to variable to contain number of bytes written.

@@ -20,7 +20,7 @@ Console             EQU    -11
 
 ; MsgOut macro writes ASCII string 'msg' to console using stdout handle.
 MsgOut  MACRO   msg             ; One arg macro: msg
-        mov     RCX, stdout     ; 1st arg: handle to console screen buffer.
+        mov     RCX, [stdout]   ; 1st arg: handle to console screen buffer.
         lea     RDX, msg        ; 2nd arg: pointer to buffer (macro) that contain text to write.
         mov     R8, LENGTHOF msg ; 3rd arg: number of characters to be written to console.
         lea     R9, num         ; 4th arg: pointer to a variable to contain the number of characters actually written.
@@ -89,7 +89,7 @@ main    PROC
 
         mov     RCX, Console    ; Move STDOUT handle to RCX to be used by GetStdHandle call.
         call    GetStdHandle    ; Receive console handle.
-        mov     stdout, RAX     ; Store console handle.
+        mov     [stdout], RAX   ; Store console handle.
 
         call    GetCommandLineW ; Stores pointer to command-line string in RAX.
         mov     RCX, RAX        ; Copy pointer to command-line string into RCX for next call.

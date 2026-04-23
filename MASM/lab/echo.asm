@@ -16,7 +16,7 @@ WriteConsoleA   PROTO                       ; Write a buffer of characters to th
 
 STD_INPUT_HANDLE  EQU    -10                ; Device code for keyboard input.
 STD_OUTPUT_HANDLE EQU    -11                ; Device code for console output.
-MaxBuf            EQU    100                ; Maximum input buffer size.
+MaxBuf            EQU    256                ; Maximum input buffer size.
 
         .DATA
 pmsg    BYTE    "Enter text: "              ; User prompt message.
@@ -33,22 +33,22 @@ main    PROC
 ;       Obtain handle for standard input (keyboard).
         mov     RCX, STD_INPUT_HANDLE       ; Standard input device code for GetStdHandle.
         call    GetStdHandle                ; Return handle to standard input.
-        mov     stdin, RAX                  ; Store the handle for keyboard input.
+        mov     [stdin], RAX                ; Store the handle for keyboard input.
 
 ;       Obtain handle for standard output (console).
         mov     RCX, STD_OUTPUT_HANDLE      ; Standard output device code for GetStdHandle.
         call    GetStdHandle                ; Return handle to standard output.
-        mov     stdout, RAX                 ; Store the handle for console output.
+        mov     [stdout], RAX               ; Store the handle for console output.
 
 ;       Print prompt to console.
-next:   mov     RCX, stdout                 ; Arg 1: output device handle.
+next:   mov     RCX, [stdout]               ; Arg 1: output device handle.
         lea     RDX, pmsg                   ; Arg 2: pointer to byte array.
         mov     R8, LENGTHOF pmsg           ; Arg 3: number of bytes to write (length of prompt string).
         lea     R9, nbwr                    ; Arg 4: pointer to variable that receives number of bytes written.
         call    WriteConsoleA               ; Function call to write text to console.
 
 ;       Read user input.
-        mov     RCX, stdin                  ; Arg 1: input device handle.
+        mov     RCX, [stdin]                  ; Arg 1: input device handle.
         lea     RDX, inbuf                  ; Arg 2: pointer to a buffer that receives the data read from the console input buffer.
         mov     R8, MaxBuf                  ; Arg 3: maximum number of bytes to be read.
         lea     R9, nbrd                    ; Arg 4: pointer to variable that receives number of bytes read.
@@ -60,7 +60,7 @@ next:   mov     RCX, stdout                 ; Arg 1: output device handle.
         je      exit                        ; Jump to exit if equal.
 
 ;       Print to console.
-        mov     RCX, stdout                 ; Arg 1: output device handle.
+        mov     RCX, [stdout]               ; Arg 1: output device handle.
         lea     RDX, inbuf                  ; Arg 2: pointer to byte array.
         mov     R8d, [nbrd]                 ; Arg 3: number of bytes to write (DWORD returned by ReadConsoleA).
         lea     R9, nbwr                    ; Arg 4: pointer to variable that receives number of bytes written.

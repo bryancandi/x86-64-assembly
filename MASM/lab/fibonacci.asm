@@ -62,20 +62,20 @@ main    PROC
 
         mov     RCX, STD_INPUT_HANDLE
         call    GetStdHandle
-        mov     stdin, RAX
+        mov     [stdin], RAX
 
         mov     RCX, STD_OUTPUT_HANDLE
         call    GetStdHandle
-        mov     stdout, RAX
+        mov     [stdout], RAX
 
 prompt_loop:
-        mov     RCX, stdout
+        mov     RCX, [stdout]
         lea     RDX, msg
         mov     R8, LENGTHOF msg
         lea     R9, nbwr
         call    WriteConsoleA
 
-        mov     RCX, stdin
+        mov     RCX, [stdin]
         lea     RDX, buffer
         mov     R8, BufSiz
         lea     R9, nbrd
@@ -115,13 +115,13 @@ fib_loop:
         push    RCX
 
         call    Int2Str
-        mov     RCX, stdout
+        mov     RCX, [stdout]
         mov     RDX, RAX
         mov     R8, R10
         lea     R9, nbwr
         call    WriteConsoleA
 
-        mov     RCX, stdout
+        mov     RCX, [stdout]
         lea     RDX, newln
         mov     R8D, LENGTHOF newln
         lea     R9, nbwr
