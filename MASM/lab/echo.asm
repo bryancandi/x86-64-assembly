@@ -48,7 +48,7 @@ next:   mov     rcx, [stdout]               ; Arg 1: output device handle.
         call    WriteConsoleA               ; Function call to write text to console.
 
 ;       Read user input.
-        mov     rcx, [stdin]                  ; Arg 1: input device handle.
+        mov     rcx, [stdin]                ; Arg 1: input device handle.
         lea     rdx, inbuf                  ; Arg 2: pointer to a buffer that receives the data read from the console input buffer.
         mov     r8, MaxBuf                  ; Arg 3: maximum number of bytes to be read.
         lea     r9, nbrd                    ; Arg 4: pointer to variable that receives number of bytes read.
