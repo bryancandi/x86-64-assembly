@@ -11,7 +11,7 @@ It allows the called function (callee) to temporarily save (spill) its first fou
 (`RCX`, `RDX`, `R8`, `R9`) to the stack.
 
 ```asm
-main    proc
+main    PROC
         sub     rsp, 40             ; 32 bytes shadow space + 8 bytes for alignment.
 
 ; The stack only needs to be restored before returning to the caller.
@@ -19,13 +19,13 @@ main    proc
 
         xor     rcx, rcx            ; Set exit status code to zero.
         call    ExitProcess         ; Call the ExitProcess function to exit the program.
-main    endp
+main    ENDP
 ```
 
 This example function does return, so the stack must be restored.
 
 ```asm
-write   proc
+Write   PROC
         sub     rsp, 40             ; 32 bytes shadow space + 8 bytes for alignment.
 
         mov     rcx, handle         ; HANDLE  hConsole
@@ -36,5 +36,5 @@ write   proc
 
         add     rsp, 40             ; Restore stack before returning.
         ret
-write   endp
+Write   ENDP
 ```
