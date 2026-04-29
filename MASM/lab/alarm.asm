@@ -1,5 +1,6 @@
 ;==============================================================
 ; ALARM.ASM - Command-line alarm clock.
+; Alarm will sound at the next occurrence of the entered time.
 ;
 ; Author: Bryan C.
 ; Date  : 2026-04-29
@@ -80,11 +81,11 @@ prompt_loop:
         ; At this time the user MUST use 24 hour HMM or HHMM format; no exceptions.
         mov     ebx, [nbrd]                 ; How many digits do we need to convert?
         sub     ebx, 2                      ; Subtract 2 for CRLF chars
-        xor     r8, r8                      ; Buffer position counter = 0
+        xor     r8, r8                      ; Initial buffer position index = 0
         xor     rax, rax
-        lea     rcx, buffer
+        lea     rcx, buffer                 ; RCX = pointer to buffer
 convert_loop:
-        movzx   rdx, BYTE PTR [rcx + r8]
+        movzx   rdx, BYTE PTR [rcx + r8]    ; RDX = pointer to BYTE (digit) at buffer + index
         sub     rdx, '0'
         imul    rax, rax, 10
         add     rax, rdx
