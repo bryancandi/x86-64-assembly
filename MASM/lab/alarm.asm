@@ -34,7 +34,7 @@ SYSTEMTIME ENDS
 
         .DATA
 SysTime SYSTEMTIME <>
-prompt  BYTE    "Enter Alarm Time (24 Hour Format HHMM): "
+prompt  BYTE    "Enter Alarm Time (24 Hour Format): "
 alset   BYTE    "Alarm is set for "
 wake    BYTE    "Alarm!", 0Dh, 0Ah
 newln   BYTE    0Dh, 0Ah
@@ -74,8 +74,10 @@ prompt_loop:
         mov     r8d, [nbrd]
         cmp     r8d, 2                      ; 2 = CRLF
         je      prompt_loop
+        cmp     r8d, 5                      ; 5 = CRLF + HMM
+        jb      prompt_loop
         cmp     r8d, 6                      ; 6 = CRLF + HHMM
-        jne     prompt_loop
+        ja      prompt_loop
 
         ; Convert user input to an integer for comparison.
         ; At this time the user MUST use 24 hour HMM or HHMM format; no exceptions.
