@@ -85,7 +85,7 @@ prompt_loop:
         xor     rax, rax
         lea     rcx, buffer                 ; RCX = pointer to buffer
 convert_loop:
-        movzx   rdx, BYTE PTR [rcx + r8]    ; RDX = pointer to BYTE (digit) at buffer + index
+        movzx   rdx, BYTE PTR [rcx + r8]    ; RDX = digit character at buffer[index], zero-extended
         sub     rdx, '0'
         imul    rax, rax, 10
         add     rax, rdx
