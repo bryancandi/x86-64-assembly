@@ -27,8 +27,9 @@ A collection of small x86-64 assembly programs and experiments for learning purp
 - [General-Purpose Registers](./docs/general-purpose-registers.md)
 - [x86-64 Register Calling Conventions](./docs/register-conventions.md)
 - [x86-64 Processor State Flags (RFLAGS)](./docs/processor-state-flags.md)
-- [GNU gdb Assembly Quick Reference](./docs/gdb.md)
 - [Windows x64 Shadow Space](./docs/shadow-space.md)
+- [Windows Debugger (WinDbg) - Quick Reference](./docs/windbg.md)
+- [GNU Debugger (GDB) - Quick Reference](./docs/gdb.md)
 
 ### 📖 External Documentation
 - [Intel® 64 and IA-32 Architectures Software Developer Manuals](https://www.intel.com/content/www/us/en/developer/articles/technical/intel-sdm.html)
