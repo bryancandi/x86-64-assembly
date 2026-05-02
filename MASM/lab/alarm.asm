@@ -34,15 +34,17 @@ SYSTEMTIME ENDS
 
         .DATA
 SysTime SYSTEMTIME <>
-prompt  BYTE    "Enter Alarm Time (24 Hour Format): "
+prompt  BYTE    "Enter Alarm Time (24 Hour HH:MM): "
 alset   BYTE    "Alarm is set for "
 wake    BYTE    "Alarm!", 0Dh, 0Ah
 newln   BYTE    0Dh, 0Ah
 buffer  BYTE    MaxSize DUP (?)
+outbuf  BYTE    MaxSize DUP (?)
 stdin   QWORD   ?
 stdout  QWORD   ?
 nbrd    DWORD   ?
 nbwr    DWORD   ?
+nbcp    DWORD   ?
 alarm_t DWORD   ?
 
         .CODE
@@ -71,21 +73,42 @@ prompt_loop:
         lea     r9, nbrd
         call    ReadFile
 
-        mov     r8d, [nbrd]
+        ; Remove unwanted character (:)
+        lea     rsi, buffer                 ; Source buffer
+        lea     rdi, outbuf                 ; Destination buffer
+        mov     r8d, [nbrd]                 ; R8D = number of characters in buffer
+        xor     r9d, r9d                    ; R9D = number of characters copied to outbuf
+rem_loop:
+        mov     al, [rsi]                   ; Load current character in source into AL
+        cmp     al, ':'                     ; Is it a colon?
+        je      skip_char                   ; Yes, skip it
+        mov     [rdi], al                   ; No, write character into destination buffer
+        inc     r9d                         ; Increment copy counter
+        dec     r8d                         ; Decrement character counter
+        test    r8d, r8d                    ; Any characters left to check?
+        jz      rem_done                    ; No, we are done
+        inc     rsi                         ; Yes, Move to next char in source
+        inc     rdi                         ; Yes, Move to next char in destination
+        jmp     rem_loop
+skip_char:
+        inc     rsi                         ; Move source index forward one position
+        dec     r8d                         ; Decrement counter
+        jmp     rem_loop
+rem_done:
+        mov     [nbcp], r9d                 ; Store count of characters copied
+
+        mov     r8d, [nbcp]
         cmp     r8d, 2                      ; 2 = CRLF
         je      prompt_loop
-        cmp     r8d, 5                      ; 5 = CRLF + HMM
-        jb      prompt_loop
         cmp     r8d, 6                      ; 6 = CRLF + HHMM
-        ja      prompt_loop
+        jne     prompt_loop
 
         ; Convert user input to an integer for comparison.
-        ; At this time the user MUST use 24 hour HMM or HHMM format; no exceptions.
-        mov     ebx, [nbrd]                 ; How many digits do we need to convert?
+        mov     ebx, [nbcp]                 ; Number of characters in the string
         sub     ebx, 2                      ; Subtract 2 for CRLF chars
         xor     r8, r8                      ; Initial buffer position index = 0
         xor     rax, rax
-        lea     rcx, buffer                 ; RCX = pointer to buffer
+        lea     rcx, outbuf                 ; RCX = pointer to buffer
 convert_loop:
         movzx   rdx, BYTE PTR [rcx + r8]    ; RDX = digit character at buffer[index], zero-extended
         sub     rdx, '0'
