@@ -35,16 +35,21 @@ SYSTEMTIME ENDS
         .DATA
 SysTime SYSTEMTIME <>
 prompt  BYTE    "Enter Alarm Time (24 Hour HH:MM): "
+inval_t BYTE    "Invalid time entered.", 0Dh, 0Ah
 alset   BYTE    "Alarm is set for "
-wake    BYTE    "Alarm!", 0Dh, 0Ah
+wake    BYTE    "Alarm!"
+blank   BYTE    "      "
+cr      BYTE    0Dh
+lf      BYTE    0Ah
 newln   BYTE    0Dh, 0Ah
 buffer  BYTE    MaxSize DUP (?)
-outbuf  BYTE    MaxSize DUP (?)
+fmtbuf  BYTE    MaxSize DUP (?)
 stdin   QWORD   ?
 stdout  QWORD   ?
 nbrd    DWORD   ?
 nbwr    DWORD   ?
-nbcp    DWORD   ?
+nbws    DWORD   ?
+nbdg    DWORD   ?
 alarm_t DWORD   ?
 
         .CODE
@@ -60,7 +65,7 @@ main    PROC
         mov     [stdout], rax
 
         ; Prompt and read input.
-prompt_loop:
+time_prompt:
         mov     rcx, [stdout]
         lea     rdx, prompt
         mov     r8, LENGTHOF prompt
@@ -73,42 +78,117 @@ prompt_loop:
         lea     r9, nbrd
         call    ReadFile
 
-        ; Remove unwanted character (:)
-        lea     rsi, buffer                 ; Source buffer
-        lea     rdi, outbuf                 ; Destination buffer
-        mov     r8d, [nbrd]                 ; R8D = number of characters in buffer
-        xor     r9d, r9d                    ; R9D = number of characters copied to outbuf
-rem_loop:
-        mov     al, [rsi]                   ; Load current character in source into AL
-        cmp     al, ':'                     ; Is it a colon?
-        je      skip_char                   ; Yes, skip it
-        mov     [rdi], al                   ; No, write character into destination buffer
-        inc     r9d                         ; Increment copy counter
-        dec     r8d                         ; Decrement character counter
-        test    r8d, r8d                    ; Any characters left to check?
-        jz      rem_done                    ; No, we are done
-        inc     rsi                         ; Yes, Move to next char in source
-        inc     rdi                         ; Yes, Move to next char in destination
-        jmp     rem_loop
-skip_char:
-        inc     rsi                         ; Move source index forward one position
-        dec     r8d                         ; Decrement counter
-        jmp     rem_loop
-rem_done:
-        mov     [nbcp], r9d                 ; Store count of characters copied
+        ; Validate user input; acceptable formats: HHMM and HH:MM
+        lea     rsi, buffer                 ; RSI = pointer to source buffer
+        lea     rdi, fmtbuf                 ; RDI = pointer to destination buffer
+        xor     r8d, r8d                    ; R8D = white space counter
+        xor     r9d, r9d                    ; R9D = digit counter (this should always = 4)
 
-        mov     r8d, [nbcp]
-        cmp     r8d, 2                      ; 2 = CRLF
-        je      prompt_loop
-        cmp     r8d, 6                      ; 6 = CRLF + HHMM
-        jne     prompt_loop
+hour_first_digit:
+        ; H position 1 / leading white space check:
+        ; Acceptable range is 0 to 2.
+        mov     al, [rsi]
+        cmp     al, ' '
+        je      consume_leading_space       ; Consume leading white space
+        cmp     al, '0'
+        jb      time_invalid
+        cmp     al, '2'
+        ja      time_invalid
+        mov     [rdi], al
+        mov     cl, al                      ; Store first hour digit in CL
+        inc     rsi
+        inc     rdi
+        inc     r9d
+
+        ; H position 2:
+        ; If hour starts with 0 or 1, range is 0-9 (10:00 to 19:00).
+        ; If hour starts with 2, range is 0-3 (20:00 to 23:00).
+        mov     al, [rsi]
+        cmp     al, '0'
+        jb      time_invalid
+        cmp     cl, '2'                     ; Is time after 20:00?
+        je      hour_20_to_23               ; Yes
+        cmp     al, '9'                     ; No
+        ja      time_invalid
+        mov     [rdi], al
+        inc     rsi
+        inc     rdi
+        inc     r9d
+        jmp     minute_first_digit
+hour_20_to_23:
+        cmp     al, '3'
+        ja      time_invalid
+        mov     [rdi], al
+        inc     rsi
+        inc     rdi
+        inc     r9d
+
+minute_first_digit:
+        ; M position 1 / colon check:
+        ; Skip over colon if present.
+        ; Acceptable range is 0-5.
+        mov     al, [rsi]
+        cmp     al, ':'
+        je      consume_digit
+        cmp     al, '0'
+        jb      time_invalid
+        cmp     al, '5'
+        ja      time_invalid
+        mov     [rdi], al
+        inc     rsi
+        inc     rdi
+        inc     r9d
+
+        ; M positon 2:
+        ; Acceptable range is 0-9.
+        mov     al, [rsi]
+        cmp     al, '0'
+        jb      time_invalid
+        cmp     al, '9'
+        ja      time_invalid
+        mov     [rdi], al
+        inc     r9d
+        mov     [nbws], r8d
+        mov     [nbdg], r9d
+
+        ; Trailing character check:
+        ; Continue only if the next character is NULL, space, CR, or LF.
+        ; Otherwise consider the value invalid.
+        inc     rsi
+        mov     al, [rsi]
+        cmp     al, 0
+        je      time_valid
+        cmp     al, ' '
+        je      time_valid
+        cmp     al, 0Dh
+        je      time_valid
+        cmp     al, 0Ah
+        je      time_valid
+        jmp     time_invalid
+
+consume_leading_space:
+        inc     rsi
+        inc     r8d
+        jmp     hour_first_digit
+
+consume_digit:
+        inc     rsi
+        jmp     minute_first_digit
+
+time_invalid:
+        mov     rcx, [stdout]
+        lea     rdx, inval_t
+        mov     r8d, LENGTHOF inval_t
+        lea     r9, nbwr
+        call    WriteConsoleA
+        jmp     time_prompt
+time_valid:
 
         ; Convert user input to an integer for comparison.
-        mov     ebx, [nbcp]                 ; Number of characters in the string
-        sub     ebx, 2                      ; Subtract 2 for CRLF chars
+        mov     ebx, [nbdg]                 ; Number of characters in the string
         xor     r8, r8                      ; Initial buffer position index = 0
         xor     rax, rax
-        lea     rcx, outbuf                 ; RCX = pointer to buffer
+        lea     rcx, fmtbuf                 ; RCX = pointer to formatted buffer
 convert_loop:
         movzx   rdx, BYTE PTR [rcx + r8]    ; RDX = digit character at buffer[index], zero-extended
         sub     rdx, '0'
@@ -127,14 +207,16 @@ convert_loop:
         lea     r9, nbwr
         call    WriteConsoleA
 
+        mov     eax, [nbws]                 ; Number of white spaces to skip in the buffer
         mov     rcx, [stdout]
         lea     rdx, buffer
+        add     rdx, rax                    ; Advance to buffer past white spaces
         mov     r8d, [nbrd]
         lea     r9, nbwr
         call    WriteConsoleA
 
         ; Keep comparing local time and alarm time until they match.
-poll_loop:
+compare_loop:
         lea     rcx, SysTime
         call    GetLocalTime
         movzx   eax, SysTime.wHour
@@ -146,7 +228,7 @@ poll_loop:
         je      alarm                       ; Yes, sound the alarm
         mov     ecx, 10000                  ; No, sleep 10 seconds and check again
         call    Sleep
-        jmp     poll_loop
+        jmp     compare_loop
 
         ; Sound the alarm!
 alarm:
