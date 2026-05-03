@@ -37,20 +37,21 @@ SysTime     SYSTEMTIME <>
 header      BYTE    "ALARM64 v1.0", 0Dh, 0Ah
 prompt      BYTE    "Alarm target time (HH:MM): "
 error       BYTE    "Invalid time format. Use 24h HH:MM.", 0Dh, 0Ah
-settime     BYTE    "Alarm set time: "
-curtime     BYTE    "Current time  : "
+lbl_stime   BYTE    "Alarm set time: "
+lbl_ctime   BYTE    "Current time  : "
 wake        BYTE    "Alarm!"
 cr          BYTE    0Dh
 lf          BYTE    0Ah
 newln       BYTE    0Dh, 0Ah
 buffer      BYTE    MaxSize DUP (?)
 fmtbuf      BYTE    MaxSize DUP (?)
+time_str    BYTE    MaxSize DUP (?)
 stdin       QWORD   ?
 stdout      QWORD   ?
 nbrd        DWORD   ?
 nbwr        DWORD   ?
 num_wspace  DWORD   ?
-num_digit   DWORD   ?
+num_digits  DWORD   ?
 alarm_time  DWORD   ?
 
         .CODE
@@ -163,7 +164,7 @@ minute_first_digit:
         mov     [rdi], al
         inc     r9d
         mov     [num_wspace], r8d
-        mov     [num_digit], r9d
+        mov     [num_digits], r9d
 
         ; Trailing character check:
         ; Continue only if the next character is NULL, space, CR, or LF.
@@ -199,11 +200,11 @@ time_invalid:
 time_valid:
 
         ; Convert user input to an integer for comparison.
-        mov     ebx, [num_digit]            ; Number of characters in the string
+        mov     ebx, [num_digits]           ; Number of characters in the string
         xor     r8, r8                      ; Initial buffer position index = 0
         xor     rax, rax
         lea     rcx, fmtbuf                 ; RCX = pointer to formatted buffer
-convert_loop:
+str_to_int_loop:
         movzx   rdx, BYTE PTR [rcx + r8]    ; RDX = digit character at buffer[index], zero-extended
         sub     rdx, '0'
         imul    rax, rax, 10
@@ -211,13 +212,13 @@ convert_loop:
         inc     r8                          ; Increment buffer position
         dec     ebx                         ; Decrement digit counter
         test    ebx, ebx
-        jnz     convert_loop
+        jnz     str_to_int_loop
         mov     [alarm_time], eax           ; Store alarm time in 'alarm_time'
 
         ; Alarm is set.
         mov     rcx, [stdout]
-        lea     rdx, settime
-        mov     r8, LENGTHOF settime
+        lea     rdx, lbl_stime
+        mov     r8, LENGTHOF lbl_stime
         lea     r9, nbwr
         call    WriteConsoleA
 
