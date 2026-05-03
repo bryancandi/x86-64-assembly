@@ -34,7 +34,7 @@ SYSTEMTIME ENDS
 
         .DATA
 SysTime     SYSTEMTIME <>
-header      BYTE    "ALARM64 v1.0 - (c) 2026 Bryan C.", 0Dh, 0Ah
+header      BYTE    "ALARM64 v1.0", 0Dh, 0Ah
 prompt      BYTE    "Alarm target time (HH:MM): "
 error       BYTE    "Invalid time format. Use 24h HH:MM.", 0Dh, 0Ah
 settime     BYTE    "Alarm set time: "
@@ -64,6 +64,19 @@ main    PROC
         mov     rcx, STD_OUTPUT_HANDLE
         call    GetStdHandle
         mov     [stdout], rax
+
+        ; Display header.
+        mov     rcx, [stdout]
+        lea     rdx, header
+        mov     r8, LENGTHOF header
+        lea     r9, nbwr
+        call    WriteConsoleA
+
+        mov     rcx, stdout
+        lea     rdx, newln
+        mov     r8, LENGTHOF newln
+        lea     r9, nbwr
+        call    WriteConsoleA
 
         ; Prompt and read input.
 time_prompt:
@@ -208,11 +221,13 @@ convert_loop:
         lea     r9, nbwr
         call    WriteConsoleA
 
+        mov     r10d, [nbrd]                ; Number of characters written to buffer
         mov     eax, [num_wspace]           ; Number of white spaces to skip in the buffer
+        sub     r10d, eax                   ; Subtract white space character count from buffer length
         mov     rcx, [stdout]
         lea     rdx, buffer
         add     rdx, rax                    ; Advance to buffer past white spaces
-        mov     r8d, [nbrd]
+        mov     r8d, r10d
         lea     r9, nbwr
         call    WriteConsoleA
 
