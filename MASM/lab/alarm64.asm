@@ -1,9 +1,9 @@
 ;==============================================================
-; ALARM.ASM - Command-line alarm clock.
+; ALARM64.ASM - Command-line alarm clock.
 ; Alarm will sound at the next occurrence of the entered time.
 ;
 ; Author: Bryan C.
-; Date  : 2026-04-29
+; Copyright (c) 2026.
 ;==============================================================
 
 INCLUDELIB kernel32.lib
@@ -33,24 +33,25 @@ SYSTEMTIME STRUCT
 SYSTEMTIME ENDS
 
         .DATA
-SysTime SYSTEMTIME <>
-prompt  BYTE    "Enter Alarm Time (24 Hour HH:MM): "
-inval_t BYTE    "Invalid time entered.", 0Dh, 0Ah
-alset   BYTE    "Alarm is set for "
-wake    BYTE    "Alarm!"
-blank   BYTE    "      "
-cr      BYTE    0Dh
-lf      BYTE    0Ah
-newln   BYTE    0Dh, 0Ah
-buffer  BYTE    MaxSize DUP (?)
-fmtbuf  BYTE    MaxSize DUP (?)
-stdin   QWORD   ?
-stdout  QWORD   ?
-nbrd    DWORD   ?
-nbwr    DWORD   ?
-nbws    DWORD   ?
-nbdg    DWORD   ?
-alarm_t DWORD   ?
+SysTime     SYSTEMTIME <>
+header      BYTE    "ALARM64 v1.0 - (c) 2026 Bryan C.", 0Dh, 0Ah
+prompt      BYTE    "Alarm target time (HH:MM): "
+error       BYTE    "Invalid time format. Use 24h HH:MM.", 0Dh, 0Ah
+settime     BYTE    "Alarm set time: "
+curtime     BYTE    "Current time  : "
+wake        BYTE    "Alarm!"
+cr          BYTE    0Dh
+lf          BYTE    0Ah
+newln       BYTE    0Dh, 0Ah
+buffer      BYTE    MaxSize DUP (?)
+fmtbuf      BYTE    MaxSize DUP (?)
+stdin       QWORD   ?
+stdout      QWORD   ?
+nbrd        DWORD   ?
+nbwr        DWORD   ?
+num_wspace  DWORD   ?
+num_digit   DWORD   ?
+alarm_time  DWORD   ?
 
         .CODE
 main    PROC
@@ -95,7 +96,7 @@ hour_first_digit:
         cmp     al, '2'
         ja      time_invalid
         mov     [rdi], al
-        mov     cl, al                      ; Store first hour digit in CL
+        mov     cl, al                      ; CL = first hour digit, for second hour digit validation
         inc     rsi
         inc     rdi
         inc     r9d
@@ -148,8 +149,8 @@ minute_first_digit:
         ja      time_invalid
         mov     [rdi], al
         inc     r9d
-        mov     [nbws], r8d
-        mov     [nbdg], r9d
+        mov     [num_wspace], r8d
+        mov     [num_digit], r9d
 
         ; Trailing character check:
         ; Continue only if the next character is NULL, space, CR, or LF.
@@ -177,15 +178,15 @@ consume_digit:
 
 time_invalid:
         mov     rcx, [stdout]
-        lea     rdx, inval_t
-        mov     r8d, LENGTHOF inval_t
+        lea     rdx, error
+        mov     r8d, LENGTHOF error
         lea     r9, nbwr
         call    WriteConsoleA
         jmp     time_prompt
 time_valid:
 
         ; Convert user input to an integer for comparison.
-        mov     ebx, [nbdg]                 ; Number of characters in the string
+        mov     ebx, [num_digit]            ; Number of characters in the string
         xor     r8, r8                      ; Initial buffer position index = 0
         xor     rax, rax
         lea     rcx, fmtbuf                 ; RCX = pointer to formatted buffer
@@ -198,16 +199,16 @@ convert_loop:
         dec     ebx                         ; Decrement digit counter
         test    ebx, ebx
         jnz     convert_loop
-        mov     [alarm_t], eax              ; Store alarm time in 'alarm_t'
+        mov     [alarm_time], eax           ; Store alarm time in 'alarm_time'
 
         ; Alarm is set.
         mov     rcx, [stdout]
-        lea     rdx, alset
-        mov     r8, LENGTHOF alset
+        lea     rdx, settime
+        mov     r8, LENGTHOF settime
         lea     r9, nbwr
         call    WriteConsoleA
 
-        mov     eax, [nbws]                 ; Number of white spaces to skip in the buffer
+        mov     eax, [num_wspace]           ; Number of white spaces to skip in the buffer
         mov     rcx, [stdout]
         lea     rdx, buffer
         add     rdx, rax                    ; Advance to buffer past white spaces
@@ -223,7 +224,7 @@ compare_loop:
         movzx   ecx, SysTime.wMinute
         imul    eax, eax, 100               ; EAX = hours * 100 (12 to 1200)
         add     eax, ecx                    ; EAX = hours + minutes
-        mov     edx, [alarm_t]
+        mov     edx, [alarm_time]
         cmp     eax, edx                    ; Have we reached the alarm set time?
         je      alarm                       ; Yes, sound the alarm
         mov     ecx, 10000                  ; No, sleep 10 seconds and check again
