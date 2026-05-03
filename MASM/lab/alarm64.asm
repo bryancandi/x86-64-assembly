@@ -37,15 +37,17 @@ SysTime     SYSTEMTIME <>
 header      BYTE    "ALARM64 v1.0", 0Dh, 0Ah
 prompt      BYTE    "Alarm target time (HH:MM): "
 error       BYTE    "Invalid time format. Use 24h HH:MM.", 0Dh, 0Ah
-lbl_stime   BYTE    "Alarm set time: "
-lbl_ctime   BYTE    "Current time  : "
+lbl_stime   BYTE    "Alarm set time:", 0Dh, 0Ah
+lbl_ctime   BYTE    "Current time:", 0Dh, 0Ah
 wake        BYTE    "Alarm!"
 cr          BYTE    0Dh
 lf          BYTE    0Ah
 newln       BYTE    0Dh, 0Ah
+colon       BYTE    ":"
 buffer      BYTE    MaxSize DUP (?)
 fmtbuf      BYTE    MaxSize DUP (?)
-time_str    BYTE    MaxSize DUP (?)
+hr_str      BYTE    MaxSize DUP (?)
+min_str     BYTE    MaxSize DUP (?)
 stdin       QWORD   ?
 stdout      QWORD   ?
 nbrd        DWORD   ?
@@ -93,7 +95,7 @@ time_prompt:
         lea     r9, nbrd
         call    ReadFile
 
-        ; Validate user input; acceptable formats: HHMM and HH:MM
+        ; Validate user input; acceptable format = HH:MM.
         lea     rsi, buffer                 ; RSI = pointer to source buffer
         lea     rdi, fmtbuf                 ; RDI = pointer to destination buffer
         xor     r8d, r8d                    ; R8D = white space counter
@@ -101,7 +103,7 @@ time_prompt:
 
 hour_first_digit:
         ; H position 1 / leading white space check:
-        ; Acceptable range is 0 to 2.
+        ; Acceptable range is 0-2 (10:00 or 20:00).
         mov     al, [rsi]
         cmp     al, ' '
         je      consume_leading_space       ; Consume leading white space
@@ -129,7 +131,7 @@ hour_first_digit:
         inc     rsi
         inc     rdi
         inc     r9d
-        jmp     minute_first_digit
+        jmp     colon_separator
 hour_20_to_23:
         cmp     al, '3'
         ja      time_invalid
@@ -138,13 +140,17 @@ hour_20_to_23:
         inc     rdi
         inc     r9d
 
-minute_first_digit:
-        ; M position 1 / colon check:
-        ; Skip over colon if present.
-        ; Acceptable range is 0-5.
+        ; Check for colon and remove for time comparison:
+colon_separator:
         mov     al, [rsi]
         cmp     al, ':'
-        je      consume_digit
+        jne     time_invalid
+        jmp     consume_separator
+
+minute_first_digit:
+        ; M position 1
+        ; Acceptable range is 0-5.
+        mov     al, [rsi]
         cmp     al, '0'
         jb      time_invalid
         cmp     al, '5'
@@ -186,7 +192,7 @@ consume_leading_space:
         inc     r8d
         jmp     hour_first_digit
 
-consume_digit:
+consume_separator:
         inc     rsi
         jmp     minute_first_digit
 
@@ -217,6 +223,12 @@ str_to_int_loop:
 
         ; Alarm is set.
         mov     rcx, [stdout]
+        lea     rdx, newln
+        mov     r8, LENGTHOF newln
+        lea     r9, nbwr
+        call    WriteConsoleA
+
+        mov     rcx, [stdout]
         lea     rdx, lbl_stime
         mov     r8, LENGTHOF lbl_stime
         lea     r9, nbwr
@@ -232,8 +244,74 @@ str_to_int_loop:
         lea     r9, nbwr
         call    WriteConsoleA
 
+        mov     rcx, [stdout]
+        lea     rdx, newln
+        mov     r8, LENGTHOF newln
+        lea     r9, nbwr
+        call    WriteConsoleA
+
+        ; Print current time label.
+        mov     rcx, [stdout]
+        lea     rdx, lbl_ctime
+        mov     r8, LENGTHOF lbl_ctime
+        lea     r9, nbwr
+        call    WriteConsoleA
+
         ; Keep comparing local time and alarm time until they match.
 compare_loop:
+        lea     rcx, SysTime
+        call    GetLocalTime
+
+        ; Store minutes in buffer.
+        lea     rdi, min_str
+        xor     edx, edx
+        movzx   eax, SysTime.wMinute
+        mov     ecx, 10
+        div     ecx
+        add     al, '0'                     ; AL = first minute digit
+        add     dl, '0'                     ; DL = second minunte digit
+        mov     [rdi], al
+        inc     rdi
+        mov     [rdi], dl
+
+        ; Store hours in buffer.
+        lea     rdi, hr_str
+        xor     edx, edx
+        movzx   eax, SysTime.wHour
+        mov     ecx, 10
+        div     ecx
+        add     al, '0'                     ; AL = first hour digit
+        add     dl, '0'                     ; DL = second hour digit
+        mov     [rdi], al
+        inc     rdi
+        mov     [rdi], dl
+
+        ; Print current local time + CR.
+        mov     rcx, [stdout]
+        lea     rdx, hr_str
+        mov     r8, LENGTHOF hr_str
+        lea     r9, nbwr
+        call    WriteConsoleA
+
+        mov     rcx, [stdout]
+        lea     rdx, colon
+        mov     r8, LENGTHOF colon
+        lea     r9, nbwr
+        call    WriteConsoleA
+
+        mov     rcx, [stdout]
+        lea     rdx, min_str
+        mov     r8, LENGTHOF min_str
+        lea     r9, nbwr
+        call    WriteConsoleA
+
+        mov     rcx, [stdout]
+        lea     rdx, cr
+        mov     r8, LENGTHOF cr
+        lea     r9, nbwr
+        call    WriteConsoleA
+
+        ; Compare current time to alarm set time.
         lea     rcx, SysTime
         call    GetLocalTime
         movzx   eax, SysTime.wHour
@@ -252,10 +330,17 @@ alarm:
         mov     ebx, 10                     ; Number of alarm cycles
 beep_loop:
         mov     rcx, [stdout]
+        lea     rdx, lf
+        mov     r8, LENGTHOF lf
+        lea     r9, nbwr
+        call    WriteConsoleA
+
+        mov     rcx, [stdout]
         lea     rdx, wake
         mov     r8, LENGTHOF wake
         lea     r9, nbwr
         call    WriteConsoleA               ; Write alarm message
+
         mov     ecx, 700                    ; Beep frequency (Hz)
         mov     edx, 1000                   ; Beep duration (ms)
         call    Beep
