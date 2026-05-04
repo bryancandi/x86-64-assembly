@@ -35,14 +35,17 @@ SYSTEMTIME ENDS
         .DATA
 SysTime     SYSTEMTIME <>
 header      BYTE    "ALARM64 v1.0", 0Dh, 0Ah
-prompt      BYTE    "Alarm target time (HH:MM): "
-error       BYTE    "Invalid time format. Use 24h HH:MM.", 0Dh, 0Ah
-lbl_stime   BYTE    "Alarm set time:", 0Dh, 0Ah
-lbl_ctime   BYTE    "Current time:", 0Dh, 0Ah
-wake        BYTE    "Alarm!"
+prompt      BYTE    0Dh, 0Ah, "Enter alarm target time (HH:MM): "
+error       BYTE    0Dh, 0Ah, "Invalid time format. Use 24h HH:MM.", 0Dh, 0Ah
+lbl_stime   BYTE    0Dh, 0Ah, "Alarm set time:", 0Dh, 0Ah
+lbl_ctime   BYTE    0Dh, 0Ah, "Current time:", 0Dh, 0Ah
+wake        BYTE    0Dh, "Alarm!"
+blank       BYTE    0Dh, "      "
+done        BYTE    0Dh, "Alarm completed.", 0Dh, 0Ah
+quit        BYTE    0Dh, 0Ah, "Press Ctrl-C to terminate.", 0Dh, 0Ah
 cr          BYTE    0Dh
-lf          BYTE    0Ah
-newln       BYTE    0Dh, 0Ah
+cr_lf       BYTE    0Dh, 0Ah
+dblsp       BYTE    0Dh, 0Ah, 0Ah
 colon       BYTE    ":"
 buffer      BYTE    MaxSize DUP (?)
 fmtbuf      BYTE    MaxSize DUP (?)
@@ -72,12 +75,6 @@ main    PROC
         mov     rcx, [stdout]
         lea     rdx, header
         mov     r8, LENGTHOF header
-        lea     r9, nbwr
-        call    WriteConsoleA
-
-        mov     rcx, stdout
-        lea     rdx, newln
-        mov     r8, LENGTHOF newln
         lea     r9, nbwr
         call    WriteConsoleA
 
@@ -223,8 +220,8 @@ str_to_int_loop:
 
         ; Alarm is set.
         mov     rcx, [stdout]
-        lea     rdx, newln
-        mov     r8, LENGTHOF newln
+        lea     rdx, quit
+        mov     r8, LENGTHOF quit
         lea     r9, nbwr
         call    WriteConsoleA
 
@@ -241,12 +238,6 @@ str_to_int_loop:
         lea     rdx, buffer
         add     rdx, rax                    ; Advance to buffer past white spaces
         mov     r8d, r10d
-        lea     r9, nbwr
-        call    WriteConsoleA
-
-        mov     rcx, [stdout]
-        lea     rdx, newln
-        mov     r8, LENGTHOF newln
         lea     r9, nbwr
         call    WriteConsoleA
 
@@ -286,7 +277,14 @@ compare_loop:
         inc     rdi
         mov     [rdi], dl
 
-        ; Print current local time + CR.
+        ; Print local time: HR + : + MIN.
+        ; Print carriage return to overwrite the current time on each update.
+        mov     rcx, [stdout]
+        lea     rdx, cr
+        mov     r8, LENGTHOF cr
+        lea     r9, nbwr
+        call    WriteConsoleA
+
         mov     rcx, [stdout]
         lea     rdx, hr_str
         mov     r8, LENGTHOF hr_str
@@ -302,12 +300,6 @@ compare_loop:
         mov     rcx, [stdout]
         lea     rdx, min_str
         mov     r8, LENGTHOF min_str
-        lea     r9, nbwr
-        call    WriteConsoleA
-
-        mov     rcx, [stdout]
-        lea     rdx, cr
-        mov     r8, LENGTHOF cr
         lea     r9, nbwr
         call    WriteConsoleA
 
@@ -327,31 +319,44 @@ compare_loop:
 
         ; Sound the alarm!
 alarm:
-        mov     ebx, 10                     ; Number of alarm cycles
-beep_loop:
         mov     rcx, [stdout]
-        lea     rdx, lf
-        mov     r8, LENGTHOF lf
+        lea     rdx, dblsp
+        mov     r8, LENGTHOF dblsp
         lea     r9, nbwr
         call    WriteConsoleA
 
+        mov     ebx, 400                    ; Number of alarm cycles (400 = 10 minutes)
+beep_loop:
+        mov     ecx, 700                    ; Beep frequency (Hz)
+        mov     edx, 1000                   ; Beep duration (ms)
+        call    Beep
+
+        mov     rcx, [stdout]
+        lea     rdx, blank
+        mov     r8, LENGTHOF blank
+        lea     r9, nbwr
+        call    WriteConsoleA               ; Write blank message
+
+        mov     ecx, 500                    ; Sleep 500 ms
+        call    Sleep
         mov     rcx, [stdout]
         lea     rdx, wake
         mov     r8, LENGTHOF wake
         lea     r9, nbwr
         call    WriteConsoleA               ; Write alarm message
 
-        mov     ecx, 700                    ; Beep frequency (Hz)
-        mov     edx, 1000                   ; Beep duration (ms)
-        call    Beep
-        mov     ecx, 500                    ; Sleep duration (ms)
-        call    Sleep
         dec     ebx                         ; Decrement cycles
         test    ebx, ebx
         jz      exit
         jmp     beep_loop
 
 exit:
+        mov     rcx, [stdout]
+        lea     rdx, done
+        mov     r8, LENGTHOF done
+        lea     r9, nbwr
+        call    WriteConsoleA
+
         xor     rcx, rcx
         call    ExitProcess
 main    ENDP
