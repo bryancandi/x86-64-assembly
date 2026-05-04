@@ -37,20 +37,18 @@ SysTime     SYSTEMTIME <>
 header      BYTE    "ALARM64 v1.0", 0Dh, 0Ah
 prompt      BYTE    0Dh, 0Ah, "Enter alarm target time (HH:MM): "
 error       BYTE    0Dh, 0Ah, "Invalid time format. Use 24h HH:MM.", 0Dh, 0Ah
-lbl_stime   BYTE    0Dh, 0Ah, "Alarm set time:", 0Dh, 0Ah
-lbl_ctime   BYTE    0Dh, 0Ah, "Current time:", 0Dh, 0Ah
+quit        BYTE    0Dh, 0Ah, "Press Ctrl-C to terminate.", 0Dh, 0Ah
+lbl_alarm   BYTE    0Dh, 0Ah, "Alarm set time: "
+lbl_local   BYTE    0Dh, "Current time:   "
 wake        BYTE    0Dh, "Alarm!"
 blank       BYTE    0Dh, "      "
 done        BYTE    0Dh, "Alarm completed.", 0Dh, 0Ah
-quit        BYTE    0Dh, 0Ah, "Press Ctrl-C to terminate.", 0Dh, 0Ah
 cr          BYTE    0Dh
-cr_lf       BYTE    0Dh, 0Ah
+crlf        BYTE    0Dh, 0Ah
 dblsp       BYTE    0Dh, 0Ah, 0Ah
-colon       BYTE    ":"
 buffer      BYTE    MaxSize DUP (?)
 fmtbuf      BYTE    MaxSize DUP (?)
-hr_str      BYTE    MaxSize DUP (?)
-min_str     BYTE    MaxSize DUP (?)
+str_local   BYTE    MaxSize DUP (?)
 stdin       QWORD   ?
 stdout      QWORD   ?
 nbrd        DWORD   ?
@@ -218,7 +216,7 @@ str_to_int_loop:
         jnz     str_to_int_loop
         mov     [alarm_time], eax           ; Store alarm time in 'alarm_time'
 
-        ; Alarm is set.
+        ; Alarm is set; print set time.
         mov     rcx, [stdout]
         lea     rdx, quit
         mov     r8, LENGTHOF quit
@@ -226,8 +224,8 @@ str_to_int_loop:
         call    WriteConsoleA
 
         mov     rcx, [stdout]
-        lea     rdx, lbl_stime
-        mov     r8, LENGTHOF lbl_stime
+        lea     rdx, lbl_alarm
+        mov     r8, LENGTHOF lbl_alarm
         lea     r9, nbwr
         call    WriteConsoleA
 
@@ -241,20 +239,33 @@ str_to_int_loop:
         lea     r9, nbwr
         call    WriteConsoleA
 
-        ; Print current time label.
-        mov     rcx, [stdout]
-        lea     rdx, lbl_ctime
-        mov     r8, LENGTHOF lbl_ctime
-        lea     r9, nbwr
-        call    WriteConsoleA
-
-        ; Keep comparing local time and alarm time until they match.
+        ; Compare loop has three functions:
+        ; 1. Build a string from SysTime stuct for printing (wHour:wMinute).
+        ; 2. Combine wMinute and wHour into a 4 digit integer time format (HHMM).
+        ; 3. Compare alarm set time to the system local time, jump to alarm when they match.
 compare_loop:
+        lea     rdi, str_local              ; Pointer to buffer to build local time string
         lea     rcx, SysTime
         call    GetLocalTime
 
+        ; Store hours in buffer.
+        xor     edx, edx
+        movzx   eax, SysTime.wHour
+        mov     ecx, 10
+        div     ecx
+        add     al, '0'                     ; AL = first hour digit
+        add     dl, '0'                     ; DL = second hour digit
+        mov     [rdi], al
+        inc     rdi
+        mov     [rdi], dl
+        inc     rdi
+
+        ; Store ':' in buffer.
+        mov     al, ':'
+        mov     [rdi], al
+        inc     rdi
+
         ; Store minutes in buffer.
-        lea     rdi, min_str
         xor     edx, edx
         movzx   eax, SysTime.wMinute
         mov     ecx, 10
@@ -265,41 +276,17 @@ compare_loop:
         inc     rdi
         mov     [rdi], dl
 
-        ; Store hours in buffer.
-        lea     rdi, hr_str
-        xor     edx, edx
-        movzx   eax, SysTime.wHour
-        mov     ecx, 10
-        div     ecx
-        add     al, '0'                     ; AL = first hour digit
-        add     dl, '0'                     ; DL = second hour digit
-        mov     [rdi], al
-        inc     rdi
-        mov     [rdi], dl
-
-        ; Print local time: HR + : + MIN.
-        ; Print carriage return to overwrite the current time on each update.
+        ; Print local time label and local time string.
+        ; 'lbl_local' begins with CR to overwrite the current line on each update.
         mov     rcx, [stdout]
-        lea     rdx, cr
-        mov     r8, LENGTHOF cr
+        lea     rdx, lbl_local
+        mov     r8, LENGTHOF lbl_local
         lea     r9, nbwr
         call    WriteConsoleA
 
         mov     rcx, [stdout]
-        lea     rdx, hr_str
-        mov     r8, LENGTHOF hr_str
-        lea     r9, nbwr
-        call    WriteConsoleA
-
-        mov     rcx, [stdout]
-        lea     rdx, colon
-        mov     r8, LENGTHOF colon
-        lea     r9, nbwr
-        call    WriteConsoleA
-
-        mov     rcx, [stdout]
-        lea     rdx, min_str
-        mov     r8, LENGTHOF min_str
+        lea     rdx, str_local
+        mov     r8, LENGTHOF str_local
         lea     r9, nbwr
         call    WriteConsoleA
 
