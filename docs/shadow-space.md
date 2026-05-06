@@ -12,7 +12,7 @@ It allows the called function (callee) to temporarily save (spill) its first fou
 
 ```asm
 main    PROC
-        sub     rsp, 40             ; 32 bytes shadow space + 8 bytes for alignment.
+        sub     rsp, 28h            ; 32 bytes shadow space + 8 bytes for alignment.
 
 ; The stack only needs to be restored before returning to the caller.
 ; Since ExitProcess never returns, no stack restoration is required.
@@ -26,15 +26,16 @@ This example function does return, so the stack must be restored.
 
 ```asm
 Write   PROC
-        sub     rsp, 40             ; 32 bytes shadow space + 8 bytes for alignment.
+        sub     rsp, 28h                  ; 32 bytes shadow space + 8 bytes for alignment.
 
-        mov     rcx, handle         ; HANDLE  hConsole
-        lea     rdx, msg            ; LPCSTR  lpBuffer
-        mov     r8, LENGTHOF msg    ; DWORD   nNumberOfCharsToWrite
-        lea     r9, bytesWritten    ; LPDWORD lpNumberOfCharsWritten
-        call    WriteConsoleA       ; Requires shadow space + alignment.
+        mov     rcx, [stdout]             ; Arg 1 = handle (value)
+        lea     rdx, buffer               ; Arg 2 = lpBuffer (pointer)
+        mov     r8, LENGTHOF buffer       ; Arg 3 = nNumberOfCharsToWrite (value)
+        lea     r9, nbwr                  ; Arg 4 = lpNumberOfCharsWritten (pointer)
+        mov     QWORD PTR [rsp+20h], 0    ; Arg 5 = lpReserved (NULL pointer on stack immediately after shadow)
+        call    WriteConsoleA             ; Requires shadow space + alignment.
 
-        add     rsp, 40             ; Restore stack before returning.
+        add     rsp, 28h                  ; Restore stack before returning.
         ret
 Write   ENDP
 ```
