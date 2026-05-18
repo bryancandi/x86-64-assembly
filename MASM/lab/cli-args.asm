@@ -49,12 +49,15 @@ print_argv:
         mov     rdx, rdi                    ; RDX = beginning of current arg string for WriteCosnoleW
 
         mov     ax, 0                       ; AX = WCHAR 0 (null terminator)
-        mov     rcx, -1                     ; RCX is decremented on each char scanned (-1 ensures it will not reach 0)
-        repne scasw                         ; Search string for null (AX); repeate while not equal
+        mov     rcx, -1                     ; RCX decrements for each WCHAR scanned (-1 prevents early termination)
+        repne   scasw                       ; Scan string for null terminator (AX); repeate while not equal
 
-        ; After looping through the string, RCX contains negative string length - 2 (null, and the initial -1 value)
-        ; We lose one of those in the NOT bitwise operation, but we still need to subtract 1 to not include the
-        ; null terminator in the final character count.
+        ; After REPNE SCASW scans the string:
+        ;   1. RCX starts at -1 and is decremented once per scan loop:
+        ;      (final RCX = -1 - number of WCHARS scanned)
+        ;   2. NOT RCX performs a bitwise inversion (one’s complement):
+        ;      (~RCX = number of WCHARS scanned), effectively canceling the initial -1 setup
+        ;   3. The result includes the terminating match, so subtract 1 for exact character count
         not     rcx                         ; Flip all bits
         dec     rcx                         ; Decrement one to remove 0 (null terminator)
         mov     r10, rcx                    ; R10 = WCHAR count
