@@ -1,5 +1,6 @@
 ;======================================================================
-; 0x02 - xorpd
+; Source : xchg rax,rax (xorpd)
+; Index  : 0x02
 ;
 ; If initial RAX != 0, final RAX will = 1
 ; If initial RAX == 0, final RAX will = 0

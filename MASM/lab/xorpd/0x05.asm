@@ -1,5 +1,6 @@
 ;======================================================================
-; 0x05 - xorpd
+; Source : xchg rax,rax (xorpd)
+; Index  : 0x05
 ;
 ; Equivalent to a high-level statement such as:
 ;   if (x >=5 && x <= 9) { ... }
