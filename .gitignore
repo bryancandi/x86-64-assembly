@@ -22,6 +22,7 @@
 !*.html
 !*.java
 !*.js
+!*.json
 !*.md
 !*.ps1
 !*.py
