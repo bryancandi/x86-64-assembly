@@ -1,0 +1,17 @@
+{
+    // Add dictionaries to the list of `dictionaries`
+    "dictionaries": ["custom-words", "masm-directives"],
+
+    "dictionaryDefinitions": [
+        {
+            "name": "custom-words",
+            "path": "./cspell-custom-words.txt",
+            "addWords": true
+        },
+        {
+            "name": "masm-directives",
+            "path": "./cspell-masm-directives.txt",
+            "addWords": true
+        }
+    ]
+}

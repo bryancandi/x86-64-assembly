@@ -1,0 +1,191 @@
+# MASM Directives Dictionary
+#   ~ - prefix that tells the spell checker to only use the word when case sensitivity is turned off.
+#   + - prefix/suffix that tells the spell checker that a word MUST be combined with another word to be valid.
+#   * - prefix/suffix that tells the spell checker that a word can be combined with another word.
+#   ! - prefix forbid a word.
+
+MASM
+
+# Code Labels
+ALIGN
+EVEN
+LABEL
+ORG
+
+# Conditional Assembly
+ELSE
+ELSEIF
+ELSEIF2
+IF
+IF2
+IFB
+IFNB
+IFDEF
+IFNDEF
+IFDIF
+IFDIFI
+IFE
+IFIDN
+IFIDNI
+
+# Conditional Control Flow
+.BREAK
+.CONTINUE
+.ELSE
+.ELSEIF
+.ENDIF
+.ENDW
+.IF
+.REPEAT
+.UNTIL
+.UNTILCXZ
+.WHILE
+
+# Conditional Error
+.ERR
+.ERR2
+.ERRB
+.ERRDEF
+.ERRDIF
+.ERRDIFI
+.ERRE
+.ERRIDN
+.ERRIDNI
+.ERRNB
+.ERRNDEF
+.ERRNZ
+
+# Data Allocation
+ALIGN
+BYTE
+SBYTE
+DWORD
+SDWORD
+EVEN
+FWORD
+LABEL
+ORG
+QWORD
+REAL4
+REAL8
+REAL10
+TBYTE
+WORD
+SWORD
+
+# Equates
+EQU
+TEXTEQU
+
+# Listing Control
+.CREF
+.LIST
+.LISTALL
+.LISTIF
+.LISTMACRO
+.LISTMACROALL
+.NOCREF
+.NOLIST
+.NOLISTIF
+.NOLISTMACRO
+PAGE
+SUBTITLE
+.TFCOND
+TITLE
+
+# Macros
+ENDM
+EXITM
+GOTO
+LOCAL
+MACRO
+PURGE
+
+# Miscellaneous
+ALIAS
+ASSUME
+COMMENT
+ECHO
+END
+.FPO
+INCLUDE
+INCLUDELIB
+MMWORD
+OPTION
+POPCONTEXT
+PUSHCONTEXT
+.RADIX
+.SAFESEH
+XMMWORD
+YMMWORD
+
+# Procedures
+ENDP
+INVOKE
+PROC
+PROTO
+
+# Processor
+.386
+.386P
+.387
+.486
+.486P
+.586
+.586P
+.686
+.686P
+.K3D
+.MMX
+.XMM
+
+# Repeat Blocks
+ENDM
+FOR
+FORC
+GOTO
+REPEAT
+WHILE
+
+# Scope
+COMM
+EXTERN
+EXTERNDEF
+INCLUDELIB
+PUBLIC
+
+# Segment
+.ALPHA
+ASSUME
+.DOSSEG
+END
+ENDS
+GROUP   
+SEGMENT
+.SEQ
+
+# Simplified Segment
+.CODE
+.CONST
+.DATA
+.DATA?
+.DOSSEG
+.EXIT
+.FARDATA
+.FARDATA?
+.MODEL
+.STACK
+.STARTUP
+
+# String
+CATSTR
+INSTR
+SIZESTR
+SUBSTR
+
+# Structure and Record
+ENDS
+RECORD
+STRUCT
+TYPEDEF
+UNION
