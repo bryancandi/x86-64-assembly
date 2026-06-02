@@ -7,5 +7,6 @@
 cpuid
 msvcrt*
 ntdll*
+xadd
 xchg
 xorpd
