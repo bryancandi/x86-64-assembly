@@ -6,7 +6,7 @@
 ;
 ; -(-(rax+1)+1) = rax
 ;
-; Example of the lower 8 bits when RAX equals 7:
+; Example of the lower 8 bits following each instruction when RAX = 7:
 ;
 ;   RAX:    00000111
 ;
