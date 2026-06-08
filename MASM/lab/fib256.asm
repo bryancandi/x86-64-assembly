@@ -162,7 +162,6 @@ continue:
 
 fib_loop:
         push    rax
-        push    rbx
         push    rcx
         push    rdx
         push    r8
@@ -189,7 +188,6 @@ fib_loop:
         pop     r8
         pop     rdx
         pop     rcx
-        pop     rbx
         pop     rax
 
         test    rdi, rdi                    ; Was initial value 0?
