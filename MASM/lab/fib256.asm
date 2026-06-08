@@ -7,7 +7,7 @@
 ; Date  : 2026-04-20
 ;
 ; Assemble with MASM and link:
-; ml64.exe fibonacci.asm /link /SUBSYSTEM:console /ENTRY:main
+; ml64.exe fib256.asm /link /SUBSYSTEM:console /ENTRY:main
 ;==============================================================
 
 INCLUDELIB kernel32.lib
