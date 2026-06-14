@@ -39,10 +39,10 @@ start   PROC
         mov     rcx, LENGTHOF buffer    ; Initialize counter for 'loop'
         dec     rcx                     ; RCX-1 to prevent out-of-bounds write at end of loop
 
-        add     byte PTR [rdi], 1
+        add     BYTE PTR [rdi], 1
 .loop:
         inc     rdi
-        adc     byte PTR [rdi], 0
+        adc     BYTE PTR [rdi], 0
         loop    .loop
 
         xor     ecx, ecx
