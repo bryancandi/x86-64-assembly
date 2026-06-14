@@ -5,6 +5,7 @@
 #   ! - prefix forbid a word.
 
 cpuid
+lodsb
 msvcrt*
 ntdll*
 xadd
