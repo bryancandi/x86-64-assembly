@@ -81,7 +81,7 @@ print_argv:
         jmp     print_argv
 
 exit:
-        xor     eax, eax
+        xor     ecx, ecx
         call    ExitProcess
 start   ENDP
         END

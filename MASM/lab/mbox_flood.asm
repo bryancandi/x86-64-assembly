@@ -85,7 +85,7 @@ msg_box_loop:
         jmp     msg_box_loop
 
 exit:
-        xor     eax, eax
+        xor     ecx, ecx
         call    ExitProcess
 start   ENDP
 

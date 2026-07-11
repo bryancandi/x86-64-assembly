@@ -27,7 +27,7 @@ start   PROC
         mov     rax, 7777777788888888h
         nop
 
-        xor     eax, eax
+        xor     ecx, ecx
         call    ExitProcess
 start   ENDP
         END
