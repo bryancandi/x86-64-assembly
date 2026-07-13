@@ -7,16 +7,16 @@
 ;
 ; Example showing only the lower 8-bits of RAX and RDX
 ; Sign-extend RAX into RDX:RAX (cqo)
-;   RAX:    11111010    -6
-;   RDX:    11111111    -1
+;   RAX:    11111010   -6
+;   RDX:    11111111   -1
 ;
 ; Invert bits in RAX (xor)
 ;   RAX:    00000101    5
 ;
 ; Subtract: 5 - (-1) = 6
-;   RAX:    00000101
-;   RDX:    11111111
-; = RAX:    00000110
+;   RAX:    00000101    5
+; - RDX:    11111111   -1
+; = RAX:    00000110    6
 ; 
 ;======================================================================
 
