@@ -11,6 +11,8 @@ movsx
 movsxd
 msvcrt*
 ntdll*
+octaword
+quadword
 xadd
 xchg
 xorpd
