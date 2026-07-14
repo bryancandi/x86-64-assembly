@@ -8,6 +8,7 @@ MASM
 
 # Code Labels
 ALIGN
+CASEMAP
 DOTNAME
 EVEN
 LABEL
