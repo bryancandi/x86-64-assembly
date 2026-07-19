@@ -8,7 +8,7 @@
 OPTION CASEMAP:NONE
 
         .DATA
-titleStr BYTE       "CPP + MASM example:", 0
+titleStr BYTE       "CPP + MASM example program", 0
 fmtStr   BYTE       "Hello, world!", 0Ah, 0
 
         .CODE
@@ -24,9 +24,9 @@ getTitle PROC
         ret
 getTitle ENDP
 
-; Declare asmFunc as public.
-PUBLIC asmFunc
-asmFunc PROC
+; Declare asmMain as public.
+PUBLIC asmMain
+asmMain PROC
         sub     rsp, 40                 ; Reserve shadow space
 
         lea     rcx, fmtStr             ; First function argument
@@ -34,5 +34,5 @@ asmFunc PROC
 
         add     rsp, 40                 ; Restore shadow space
         ret                             ; Return to caller
-asmFunc ENDP
+asmMain ENDP
         END

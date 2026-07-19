@@ -1,4 +1,4 @@
 @echo off
 
-ml64.exe /c asmfunc.asm
-cl.exe c.cpp asmfunc.obj
+ml64.exe /c hello.asm
+cl.exe c.cpp hello.obj
