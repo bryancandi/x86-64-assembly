@@ -4,12 +4,12 @@
 
 #include <stdio.h>
 
-extern void asmFunc(void); // Declare external assembly function
+extern void asmMain(void); // Declare external assembly function
 
 int main(void)
 {
     printf("Calling asmFunc:\n");
-    asmFunc();
+    asmMain();
     printf("Returned from asmFunc\n");
     return 0;
 }

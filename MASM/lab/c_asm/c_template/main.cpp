@@ -1,4 +1,4 @@
-// c.cpp
+// main.cpp
 
 // Generic C++ driver program to demonstrate returning function
 // results from assembly language to C++. Also includes a
@@ -88,7 +88,7 @@ int main(void)
     {
         printf
         (
-        "Exception occurred during program execution\n"
+        "Exception occurred during program execution.\n"
         "Abnormal program termination.\n"
         );
     }

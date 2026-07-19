@@ -14,10 +14,10 @@ fmtStr  BYTE    "Hello, world!", 0Ah, 0
 ; External declaration so MASM knows about the C/C++ printf() function.
 EXTERNDEF printf:PROC
 
-; Declare asmFunc as public.
-PUBLIC asmFunc
+; Declare asmMain as public.
+PUBLIC asmMain
 
-asmFunc PROC
+asmMain PROC
         sub     rsp, 40                 ; Reserve shadow space
 
         lea     rcx, fmtStr             ; First function argument
@@ -25,5 +25,5 @@ asmFunc PROC
 
         add     rsp, 40                 ; Restore shadow space
         ret                             ; Return to caller
-asmFunc ENDP
+asmMain ENDP
         END
