@@ -35,5 +35,8 @@
 !*.txt
 !Makefile
 
+# Don't ignore any files in this specific directory
+!/MASM/artofasm64v1/*
+
 # Don't ignore gitignore file itself
 !.gitignore
