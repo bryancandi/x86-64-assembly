@@ -5,6 +5,7 @@
 #   ! - prefix forbid a word.
 
 asmfunc
+bswap
 cmovc
 cpuid
 lodsb
