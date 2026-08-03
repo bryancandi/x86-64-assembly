@@ -12,6 +12,9 @@ lodsb
 movsx
 movsxd
 msvcrt*
+nbrd
+nbwr
+newln
 ntdll*
 octaword
 quadword
