@@ -1,5 +1,5 @@
 ;======================================================================
-; Message Box Infinite Loop - Threaded MessageBox Spawner
+; Threaded MessageBox Spawner
 ;
 ; Press and hold ESC to terminate execution.
 ;
@@ -21,7 +21,7 @@ Sleep            PROTO dwMilliseconds:DWORD
 wsprintfA        PROTO C :PTR BYTE, :PTR BYTE, :VARARG
 
 STD_OUTPUT_HANDLE EQU -11
-SLEEP_MS          EQU 650
+SLEEP_MS          EQU 1000
 VK_ESCAPE         EQU 1Bh
 
         .DATA
@@ -29,8 +29,8 @@ exitMsg BYTE    0Ah, 0Dh, "Press and hold ESC to terminate.", 0Ah, 0Dh
 stdout  QWORD   ?
 nbwr    DWORD   ?
 counter DWORD   0
-format  BYTE    "This is message box number %d.", 0
-mbCapt  BYTE    "System Alert", 0
+format  BYTE    "This is thread number %d.", 0
+mbCapt  BYTE    "Message Box", 0
 
         .CODE
 start   PROC
