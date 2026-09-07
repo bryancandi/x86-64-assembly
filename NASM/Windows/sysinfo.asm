@@ -135,5 +135,5 @@ main:
     call printf
 
 ; Terminate program
-    xor rax, rax                            ; Set RAX to 0 (exit code)
+    xor ecx, ecx                            ; Set ECX to 0 (exit code)
     call ExitProcess                        ; Call ExitProcess to terminate program

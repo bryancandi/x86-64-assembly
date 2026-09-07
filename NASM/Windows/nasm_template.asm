@@ -19,7 +19,7 @@ main:
 
     ; Assembly instructions go here.
 
-    xor rcx, rcx            ; Exit code 0.
+    xor ecx, ecx            ; Exit code 0.
     call ExitProcess        ; Exit the program.
 
     ; Restore stack pointer (optional, ExitProcess does not return).

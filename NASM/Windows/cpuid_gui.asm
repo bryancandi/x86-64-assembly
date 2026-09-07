@@ -51,5 +51,5 @@ main:
     mov r9d, 0x40                           ; Style for message box: MB_ICONINFORMATION (fourth arg)
     call MessageBoxA                        ; Call MessageBoxA function
 
-    xor rax, rax                            ; Set RAX to 0 (exit code)
+    xor ecx, ecx                            ; Set ECX to 0 (exit code)
     call ExitProcess                        ; Call ExitProcess to terminate program

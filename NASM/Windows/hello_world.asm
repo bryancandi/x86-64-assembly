@@ -25,5 +25,5 @@ main:
     lea rcx, [msg]                          ; Load the address of the message into RCX (first argument to printf)
     call printf                             ; Call the printf function to print the message
 
-    xor rax, rax                            ; Set RAX to 0 (exit code for ExitProcess)
+    xor ecx, ecx                            ; Set ECX to 0 (exit code for ExitProcess)
     call ExitProcess                        ; Call ExitProcess to terminate the program
