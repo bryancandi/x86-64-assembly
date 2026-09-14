@@ -5,16 +5,25 @@ INCLUDELIB kernel32.lib
 
 ExitProcess PROTO
 
-        .DATA
+        .DATA?
+NtMajorVersion  DWORD   ?
+NtMinorVersion  DWORD   ?
+NtBuildNumber   DWORD   ?
 
         .CODE
 start   PROC
         sub rsp, 28h
 
         mov rbx, 7FFE0000h
-        mov eax, [rbx + 026Ch]      ; NtMajorVersion
-        mov ecx, [rbx + 0270h]      ; NtMinorVersion
-        mov edx, [rbx + 0260h]      ; NtBuildNumber
+
+        mov eax, [rbx + 26Ch]
+        mov NtMajorVersion, eax
+
+        mov eax, [rbx + 270h]
+        mov NtMinorVersion, eax
+
+        mov eax, [rbx + 260h]
+        mov NtBuildNumber, eax
 
         xor ecx, ecx
         call ExitProcess
