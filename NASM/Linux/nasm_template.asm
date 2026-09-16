@@ -5,8 +5,9 @@
 ;   ld -o source source.o
 ;--------------------------------------------------------------------
 
-; Set 64-bit mode
+; Set 64-bit mode and RIP-relative addressing mode
 bits 64
+default rel
 
 section .data
     ; Variable declarations go here.
@@ -17,6 +18,6 @@ global _start               ; Entry point for Linux executables.
 _start:
     ; Assembly instructions go here.
 
-    mov rdi, 0              ; exit code 0.
+    xor rdi, rdi            ; exit code 0.
     mov rax, 60             ; syscall number for exit.
     syscall
