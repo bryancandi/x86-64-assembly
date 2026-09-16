@@ -7,8 +7,8 @@ default rel
 
 section .data
 
-msg     db  "hello, world!", 10, 0
-fmt1    db  "%s", 0
+msg:    db  "hello, world!", 10, 0
+fmt1:   db  "%s", 0
 
 section .text
 
