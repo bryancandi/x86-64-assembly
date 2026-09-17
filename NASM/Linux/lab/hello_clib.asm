@@ -16,11 +16,11 @@ extern printf
 
 global main
 main:
-        sub     rsp, 8
+    sub     rsp, 8
 
-        lea     rdi, fmt1
-        lea     rsi, msg
-        call    printf wrt ..plt
+    lea     rdi, fmt1
+    lea     rsi, msg
+    call    printf wrt ..plt
 
-        add     rsp, 8
-        ret
+    add     rsp, 8
+    ret
