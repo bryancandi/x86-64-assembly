@@ -36,8 +36,8 @@ start   PROC
         mov     DWORD PTR vendorID[8], ecx
 
         ; Call custom print procedure to write output to console
-        lea     rdx, vendorID
-        mov     r8, LENGTHOF vendorID
+        lea     rcx, vendorID
+        mov     edx, LENGTHOF vendorID
         call    print
 
         ; Intel cpuid Feature Flags (EAX = 1)
@@ -81,15 +81,15 @@ print   PROC
         push    r12
         sub     rsp, 56
 
-        mov     rbx, rdx        ; Copy pointer to buffer
-        mov     r12, r8         ; Copy buffer length
+        mov     rbx, rcx        ; Copy pointer to buffer
+        mov     r12d, edx       ; Copy buffer length
 
         mov     ecx, -11        ; Standard output handle
         call    GetStdHandle    ; Stdout in RAX
         
         mov     rcx, rax
         mov     rdx, rbx
-        mov     r8, r12
+        mov     r8d, r12d
         lea     r9, [rsp + 40]
         mov     QWORD PTR [rsp + 32], 0
         call    WriteFile
