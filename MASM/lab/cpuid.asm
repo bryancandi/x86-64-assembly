@@ -26,10 +26,6 @@ start   PROC
         sub     rsp, 40
         push    rbx
 
-        mov     ecx, -11        ; Standard output handle
-        call    GetStdHandle
-        mov     [stdout], rax
-
         ; Return highest supported CPUID leaf in EAX (EAX = 0)
         ; Also returns CPU vendor string
         xor     eax, eax
