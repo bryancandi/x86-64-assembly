@@ -5,16 +5,21 @@
 ;
 ; Preserves all registers except RAX (and RFLAGS).
 ;
+; Local stack frame = 56 bytes
+;   [rsp +  0] 32 bytes - shadow space
+;   [rsp + 32]  8 bytes - WriteFile 5th argument (lpOverlapped)
+;   [rsp + 40]  4 bytes - bytes written (DWORD), plus 4 bytes padding
+;   [rsp + 48]  8 bytes - alignment
+;
 ; Depends:
 ; - kernel32.lib
 ;   - EXTERN GetStdHandle:PROC
 ;   - EXTERN WriteFile:PROC
 ;
-; Input  :
-;   RCX  : Pointer to buffer
-;   EDX  : Length of buffer (DWORD)
-; Return :
-;   EAX  : Number of bytes written on success or zero on failure
+; Input:  RCX = Pointer to buffer
+;         EDX = Length of buffer (DWORD)
+; Output: EAX = Number of bytes written on success (DWORD)
+;               Zero on failure
 ;--------------------------------------------------------------------
 
 print   PROC
@@ -28,24 +33,24 @@ print   PROC
         push    r12
         sub     rsp, 56
 
-        mov     rbx, rcx        ; Copy pointer to buffer
-        mov     r12d, edx       ; Copy buffer length
+        mov     rbx, rcx        ; Save pointer to buffer
+        mov     r12d, edx       ; Save buffer length
 
-        mov     ecx, -11        ; Standard output handle
-        call    GetStdHandle    ; Stdout in RAX
+        mov     ecx, -11        ; Standard output device (STDOUT)
+        call    GetStdHandle    ; Handle to standard output device in RAX
         
-        mov     rcx, rax
-        mov     rdx, rbx
-        mov     r8d, r12d
-        lea     r9, [rsp + 40]
-        mov     QWORD PTR [rsp + 32], 0
+        mov     rcx, rax        ; Arg 1: device handle
+        mov     rdx, rbx        ; Arg 2: pointer to buffer
+        mov     r8d, r12d       ; Arg 3: number of bytes to write to device
+        lea     r9, [rsp + 40]  ; Arg 4: pointer to DWORD to receive bytes written
+        mov     QWORD PTR [rsp + 32], 0 ; Arg 5: lpOverlapped = NULL
         call    WriteFile
-        test    eax, eax
-        jz      error
-        mov     eax, [rsp + 40]
+        test    eax, eax        ; WriteFile successful?
+        jz      error           ; No
+        mov     eax, [rsp + 40] ; Yes: return bytes written
         jmp     done
 error:
-        xor     eax, eax        ; WriteFile failure; return 0
+        xor     eax, eax        ; WriteFile failure: return 0
 done:
 
         add     rsp, 56
