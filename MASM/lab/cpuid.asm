@@ -13,13 +13,9 @@ extFlags    DWORD   ?
 vendorID    BYTE    12 DUP (?)
 
         .CONST
-; Unused at this time...
-AVX         BYTE    "AVX", 0Dh, 0Ah
-AVX2        BYTE    "AVX2", 0Dh, 0Ah
-SSE3        BYTE    "SSE3", 0Dh, 0Ah
-SSSE3       BYTE    "SSSE3", 0Dh, 0Ah
-SSE41       BYTE    "SSE4.1", 0Dh, 0Ah
-SSE42       BYTE    "SSE4.2", 0Dh, 0Ah
+nl          BYTE    0Dh, 0Ah
+one         BYTE    "1"
+zero        BYTE    "0"
 
         .CODE
 start   PROC
@@ -40,6 +36,11 @@ start   PROC
         mov     edx, LENGTHOF vendorID
         call    print
 
+        ; Print newline
+        lea     rcx, nl
+        mov     edx, LENGTHOF nl
+        call    print
+
         ; Intel cpuid Feature Flags (EAX = 1)
         ; Bits set in ECX:
         ; 0  - SSE3 supported
@@ -51,6 +52,34 @@ start   PROC
         mov     eax, 1h
         cpuid
         mov     featFlags, ecx
+
+        ; Print value in featFlags as a binary string
+        mov     ecx, 32         ; Counter (32 bits)
+print_bits:
+        shl     featFlags, 1          ; Shift 1 bit at a time and test for carry
+        jc      print_bit_one   ; If CF = 1, print '1'
+        push    rcx
+        lea     rcx, zero
+        mov     edx, 1
+        call    print
+        pop     rcx
+        dec     ecx
+        jnz     print_bits
+        jmp     done
+print_bit_one:
+        push    rcx
+        lea     rcx, one
+        mov     edx, 1
+        call    print
+        pop     rcx
+        dec     ecx
+        jnz     print_bits
+        jmp     done
+done:
+        ; Print newline
+        lea     rcx, nl
+        mov     edx, LENGTHOF nl
+        call    print
 
         ; Intel cpuid Extended Feature Flags (EAX = 7, ECX = 0)
         ; Bits set in EBX:
