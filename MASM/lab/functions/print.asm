@@ -21,7 +21,12 @@
 ; Output: EAX = Number of bytes written on success (DWORD)
 ;               Zero on failure
 ;--------------------------------------------------------------------
+INCLUDELIB kernel32.lib
 
+EXTERN GetStdHandle:PROC
+EXTERN WriteFile:PROC
+
+        .CODE
 print   PROC
         push    rbx
         push    rcx
@@ -38,7 +43,7 @@ print   PROC
 
         mov     ecx, -11        ; Standard output device (STDOUT)
         call    GetStdHandle    ; Handle to standard output device in RAX
-        
+
         mov     rcx, rax        ; Arg 1: device handle
         mov     rdx, rbx        ; Arg 2: pointer to buffer
         mov     r8d, r12d       ; Arg 3: number of bytes to write to device
@@ -46,13 +51,10 @@ print   PROC
         mov     QWORD PTR [rsp + 32], 0 ; Arg 5: lpOverlapped = NULL
         call    WriteFile
         test    eax, eax        ; WriteFile successful?
-        jz      error           ; No
-        mov     eax, [rsp + 40] ; Yes: return bytes written
-        jmp     done
-error:
+        mov     eax, [rsp + 40] ; Load bytes written
+        jnz     @F              ; WriteFile success: keep bytes written
         xor     eax, eax        ; WriteFile failure: return 0
-done:
-
+@@:
         add     rsp, 56
         pop     r12
         pop     r11
