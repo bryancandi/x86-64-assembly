@@ -21,6 +21,11 @@
 ; Output: EAX = Number of bytes written on success (DWORD)
 ;               Zero on failure
 ;--------------------------------------------------------------------
+
+; Include guard: skip this file if it was already pasted into this assembly
+IFNDEF PRINT_ASM_INCLUDED
+PRINT_ASM_INCLUDED EQU 1
+
 INCLUDELIB kernel32.lib
 
 EXTERN GetStdHandle:PROC
@@ -66,3 +71,5 @@ print   PROC
         pop     rbx
         ret
 print   ENDP
+
+ENDIF
