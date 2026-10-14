@@ -2,12 +2,13 @@
 
 INCLUDELIB kernel32.lib
 INCLUDE functions\print.asm
+INCLUDE functions\print_local_time.asm
 
 EXTERN ExitProcess:PROC
 
         .CONST
-begin   BYTE    "SIMD performance test beginning...", 0Dh, 0Ah
-done    BYTE    "Done.", 0Dh, 0Ah
+begin   BYTE    " - SIMD performance test beginning...", 0Dh, 0Ah
+done    BYTE    " - Done.", 0Dh, 0Ah
 
 dseg    SEGMENT ALIGN(64) 'DATA'
         ALIGN   64
@@ -18,6 +19,8 @@ dseg    ENDS
 start   PROC
         sub     rsp, 40
         push    rbx
+
+        call    print_local_time
 
         lea     rcx, begin
         mov     edx, LENGTHOF begin
@@ -42,6 +45,8 @@ rptLp2: movaps  xmm0, xmmword ptr [rdx + rbx * 1]
 
         dec     rcx
         jnz     rptLp
+
+        call    print_local_time
 
         lea     rcx, done
         mov     edx, LENGTHOF done
