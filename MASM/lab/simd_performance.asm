@@ -40,6 +40,8 @@ rptLp2: movaps  xmm0, xmmword ptr [rdx + rbx * 1]
         ;vmovaps zmm0, zmmword ptr [rdx + rbx * 1]
         ;vmovapd zmm0, zmmword ptr [rdx + rbx * 1]
 
+        vzeroupper ; Clear the AVX state before going back to SSE (for older CPUs)
+
         dec     rax
         jns     rptLp2
 
