@@ -1,10 +1,9 @@
-; CPUID
+; CPUID test
 
 INCLUDELIB kernel32.lib
+INCLUDE functions\print.asm
 
 EXTERN ExitProcess:PROC
-EXTERN GetStdHandle:PROC
-EXTERN WriteFile:PROC
 
         .DATA?
 maxLeaf     DWORD   ?
@@ -98,47 +97,4 @@ skip7h:
         mov     ecx, maxLeaf    ; Return maxLeaf in exit code
         call    ExitProcess
 start   ENDP
-
-print   PROC
-        push    rbx
-        push    rcx
-        push    rdx
-        push    r8
-        push    r9
-        push    r10
-        push    r11
-        push    r12
-        sub     rsp, 56
-
-        mov     rbx, rcx        ; Copy pointer to buffer
-        mov     r12d, edx       ; Copy buffer length
-
-        mov     ecx, -11        ; Standard output handle
-        call    GetStdHandle    ; Stdout in RAX
-        
-        mov     rcx, rax
-        mov     rdx, rbx
-        mov     r8d, r12d
-        lea     r9, [rsp + 40]
-        mov     QWORD PTR [rsp + 32], 0
-        call    WriteFile
-        test    eax, eax
-        jz      error
-        mov     eax, [rsp + 40]
-        jmp     done
-error:
-        xor     eax, eax        ; WriteFile failure; return 0
-done:
-
-        add     rsp, 56
-        pop     r12
-        pop     r11
-        pop     r10
-        pop     r9
-        pop     r8
-        pop     rdx
-        pop     rcx
-        pop     rbx
-        ret
-print   ENDP
         END
