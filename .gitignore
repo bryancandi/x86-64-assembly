@@ -21,10 +21,12 @@
 !*.db
 !*.h
 !*.html
+!*.inc
 !*.java
 !*.js
 !*.json
 !*.md
+!*.old
 !*.ps1
 !*.py
 !*.R
