@@ -20,11 +20,14 @@
 ;         EDX = Length of buffer (DWORD)
 ; Output: EAX = Number of bytes written on success (DWORD)
 ;               Zero on failure
+;
+; Use in source file with:
+; INCLUDE print.asm
 ;--------------------------------------------------------------------
 
 ; Include guard: skip this file if it was already pasted into this assembly
-IFNDEF PRINT_ASM_INCLUDED
-PRINT_ASM_INCLUDED EQU 1
+IFNDEF PRINT_ASM_INC            ; print.inc
+PRINT_ASM_INC EQU 0
 
 INCLUDELIB kernel32.lib
 
@@ -72,4 +75,4 @@ print   PROC
         ret
 print   ENDP
 
-ENDIF
+ENDIF                           ; PRINT_ASM_INC
