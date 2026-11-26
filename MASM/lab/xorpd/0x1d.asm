@@ -2,6 +2,9 @@
 ; Source : xchg rax,rax (xorpd)
 ; Index  : 0x1d
 ;
+; An overly complicated way to copy the first N QWORDs of one buffer
+; into another. RBP is set up as the source and RSP as the destination.
+;
 ; MASM reference:
 ; ENTER: Creates a stack frame for a procedure that receives parameters
 ; passed on the stack. ENTER IMMED16, IMMED8
@@ -22,37 +25,9 @@
 ; “Procedure Calls for Block-Structured Languages” in Chapter 6 of the Intel® 64 and IA-32 Architectures Software
 ; Developer’s Manual, Volume 1, for more information about the actions of the ENTER instruction.
 ;
-;======================================================================
-
-INCLUDELIB kernel32.lib
-
-ExitProcess PROTO uExitCode:DWORD
-
-n       EQU     1                       ; Index
-
-        .DATA?
-buff1   QWORD   64 DUP (0)
-buff2   QWORD   64 DUP (0)
-
-        .CODE
-start   PROC
-        sub     rsp, 40
-
-                                        ; element_address = base_address + index * element_size
-;       mov     rsp, buff2 + n*8 + 8    ; NASM versions from XORPD book, ported to MASM below with LEA
-;       mov     rbp, buff1 + n*8
-
-        lea     rsp, buff2 + n*8 + 8    ; RSP = address of element 'n' + 1 in the buff2 array
-        lea     rbp, buff1 + n*8        ; RBP = address of element 'n' in the buff1 array
-        enter   0, n+1                  ; Copies the first 'n' elements in buff1 into buff2 at the same indices
-
-        xor     ecx, ecx
-        call    ExitProcess
-start   ENDP
-        END
-
+; --------------------------------------
 ; Pseudo code walkthrough
-; enter 0, n+1 :
+; enter 0, n+1
 ;
 ; Operands are 64-bit
 ; AllocSize = 0
@@ -101,3 +76,31 @@ start   ENDP
 ;
 ; rbp := 0x2008 (FrameTemp)
 ; rsp := 0x1FF8 (rsp - 0 (AllocSize))
+;======================================================================
+
+INCLUDELIB kernel32.lib
+
+ExitProcess PROTO uExitCode:DWORD
+
+n       EQU     1                       ; Index
+
+        .DATA?
+buff1   QWORD   64 DUP (0)
+buff2   QWORD   64 DUP (0)
+
+        .CODE
+start   PROC
+        sub     rsp, 40
+
+                                        ; element_address = base_address + index * element_size
+;       mov     rsp, buff2 + n*8 + 8    ; NASM versions from XORPD book, ported to MASM below with LEA
+;       mov     rbp, buff1 + n*8
+
+        lea     rsp, buff2 + n*8 + 8    ; RSP = address of element 'n' + 1 in the buff2 array
+        lea     rbp, buff1 + n*8        ; RBP = address of element 'n' in the buff1 array
+        enter   0, n+1                  ; Copies the first 'n' elements in buff1 into buff2 at the same indices
+
+        xor     ecx, ecx
+        call    ExitProcess
+start   ENDP
+        END
